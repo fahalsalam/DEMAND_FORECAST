@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "backend",
+      "runtimeExecutable": "/Users/fahal/DEMAND_FORCAST/files/backend/.venv/bin/uvicorn",
+      "runtimeArgs": ["app.main:app", "--host", "127.0.0.1", "--port", "8000"],
+      "cwd": "/Users/fahal/DEMAND_FORCAST/files/backend",
+      "port": 8000
+    },
+    {
+      "name": "frontend",
+      "runtimeExecutable": "/opt/homebrew/bin/npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "/Users/fahal/DEMAND_FORCAST/files/frontend",
+      "port": 5173
+    }
+  ]
+}
