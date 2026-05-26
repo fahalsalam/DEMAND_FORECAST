@@ -5,9 +5,10 @@ interface Props {
   state: RunState;
   totalSkus?: number;
   onRun: (req: { service_level: number; review_period_days: number }) => void;
+  onCancel?: () => void;
 }
 
-export function RunForecastPanel({ state, totalSkus, onRun }: Props) {
+export function RunForecastPanel({ state, totalSkus, onRun, onCancel }: Props) {
   const [serviceLevel, setServiceLevel] = useState(0.95);
   const [reviewPeriod, setReviewPeriod] = useState(7);
 
@@ -28,29 +29,44 @@ export function RunForecastPanel({ state, totalSkus, onRun }: Props) {
           <h3>Run Forecast</h3>
           <p>Picks the best of ARIMA, Prophet, and LightGBM per SKU.</p>
         </div>
-        <button
-          className={`btn btn-primary ${isRunning ? "spinning" : ""}`}
-          onClick={() =>
-            onRun({ service_level: serviceLevel, review_period_days: reviewPeriod })
-          }
-          disabled={isRunning}
-        >
-          {isRunning ? (
-            <>
+        <div className="run-buttons">
+          <button
+            className={`btn btn-primary ${isRunning ? "spinning" : ""}`}
+            onClick={() =>
+              onRun({ service_level: serviceLevel, review_period_days: reviewPeriod })
+            }
+            disabled={isRunning}
+          >
+            {isRunning ? (
+              <>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 12a9 9 0 11-6.219-8.56" />
+                </svg>
+                {state.kind === "starting" ? "Starting…" : "Running…"}
+              </>
+            ) : (
+              <>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                Run Forecast
+              </>
+            )}
+          </button>
+
+          {isRunning && onCancel && (
+            <button
+              className="btn btn-cancel"
+              onClick={onCancel}
+              title="Stop this forecast — partial results are kept"
+            >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 12a9 9 0 11-6.219-8.56" />
+                <rect x="6" y="6" width="12" height="12" rx="1" />
               </svg>
-              {state.kind === "starting" ? "Starting…" : "Running…"}
-            </>
-          ) : (
-            <>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="5 3 19 12 5 21 5 3" />
-              </svg>
-              Run Forecast
-            </>
+              Stop
+            </button>
           )}
-        </button>
+        </div>
       </header>
 
       <div className="run-controls">

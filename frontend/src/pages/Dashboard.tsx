@@ -15,7 +15,7 @@ const LAST_JOB_KEY = "df:lastJobId";
 const HIW_KEY = "df:hideHowItWorks";
 
 export function Dashboard() {
-  const { state, run } = useForecastJob();
+  const { state, run, cancel } = useForecastJob();
   const [skus, setSkus] = useState<SkuSummary[]>([]);
   const [skusLoading, setSkusLoading] = useState(true);
   const [metrics, setMetrics] = useState<MetricsSummary | null>(null);
@@ -153,6 +153,7 @@ export function Dashboard() {
         state={state}
         totalSkus={skus.length || metrics?.total_skus}
         onRun={(req) => run(req)}
+        onCancel={() => void cancel()}
       />
 
       {loadError && (

@@ -17,13 +17,15 @@ from datetime import datetime, timedelta, timezone
 
 import pandas as pd
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.models import (
     CurrentInventory,
+    ForecastResult,
     ProductMaster,
+    ReorderDecision,
     SalesHistory,
 )
 from app.schemas import (
@@ -511,3 +513,72 @@ def list_sales_for_sku(
         .order_by(SalesHistory.date)
     ).all()
     return [SalesDayPoint(date=d, quantity=int(q), promo=bool(p)) for d, q, p in rows]
+
+
+# ---------- DELETE /data/products/{sku} -----------------------------------
+@router.delete("/products/{sku}")
+def delete_product(sku: str, db: Session = Depends(get_db)) -> dict:
+    """Delete one product AND everything that references it: sales history,
+    current inventory, prior forecast results, prior reorder decisions.
+
+    The sales/inventory cascade automatically via FK ON DELETE CASCADE
+    (with PRAGMA foreign_keys=ON, set in db.py). forecast_results and
+    reorder_decisions reference sku by index only (not FK), so we clean
+    them explicitly so stale rows don't haunt later dashboards.
+
+    Returns the count of every row type removed so the UI can show
+    something like: "Deleted SKU-001 — 731 sales rows, 1 inventory, ..."
+    """
+    product = db.get(ProductMaster, sku)
+    if product is None:
+        raise HTTPException(404, f"SKU {sku} not found.")
+
+    name = product.name
+
+    sales_count = db.execute(
+        select(func.count()).select_from(SalesHistory).where(SalesHistory.sku == sku)
+    ).scalar() or 0
+    inv_count = 1 if db.get(CurrentInventory, sku) else 0
+    fc_count = db.execute(
+        select(func.count()).select_from(ForecastResult).where(ForecastResult.sku == sku)
+    ).scalar() or 0
+    rd_count = db.execute(
+        select(func.count()).select_from(ReorderDecision).where(ReorderDecision.sku == sku)
+    ).scalar() or 0
+
+    # Cleanup non-FK references first.
+    if fc_count:
+        db.execute(delete(ForecastResult).where(ForecastResult.sku == sku))
+    if rd_count:
+        db.execute(delete(ReorderDecision).where(ReorderDecision.sku == sku))
+
+    # Deleting the product cascades to sales_history + current_inventory.
+    db.delete(product)
+    db.commit()
+
+    return {
+        "sku": sku,
+        "name": name,
+        "deleted": {
+            "product": 1,
+            "sales_rows": int(sales_count),
+            "inventory_rows": int(inv_count),
+            "forecast_results": int(fc_count),
+            "reorder_decisions": int(rd_count),
+        },
+    }
+
+
+# ---------- DELETE /data/inventory/{sku} ----------------------------------
+@router.delete("/inventory/{sku}")
+def delete_inventory(sku: str, db: Session = Depends(get_db)) -> dict:
+    """Remove just the inventory row for one SKU. Keeps the product and
+    its sales history intact — useful when a product is discontinued from
+    a particular store but you still want the catalogue/history.
+    """
+    inv = db.get(CurrentInventory, sku)
+    if inv is None:
+        raise HTTPException(404, f"No inventory row for SKU {sku}.")
+    db.delete(inv)
+    db.commit()
+    return {"sku": sku, "deleted": True}

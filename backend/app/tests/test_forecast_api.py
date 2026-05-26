@@ -3,11 +3,17 @@
 Strategy: seed a TINY in-memory DB with 3 SKUs of plausible sales, kick off
 `/forecast/run`, wait for the background task to finish, then exercise every
 read endpoint. Keeps the per-test cost under ~30s.
+
+We force the forecast runner to sequential mode here — the parallel
+ProcessPool spawns child processes that wouldn't see our in-memory test DB.
 """
 from __future__ import annotations
 
+import os
 import time
 from datetime import date, timedelta
+
+os.environ["DEMAND_FORECAST_WORKERS"] = "1"
 
 import numpy as np
 import pytest

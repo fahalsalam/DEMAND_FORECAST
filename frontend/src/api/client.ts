@@ -124,6 +124,25 @@ export const api = {
   listSalesForSku: (sku: string, days = 90) =>
     request<SalesDayPoint[]>(`/data/sales/${encodeURIComponent(sku)}${qs({ days })}`),
 
+  // delete
+  deleteProduct: (sku: string) =>
+    request<{
+      sku: string;
+      name: string;
+      deleted: {
+        product: number;
+        sales_rows: number;
+        inventory_rows: number;
+        forecast_results: number;
+        reorder_decisions: number;
+      };
+    }>(`/data/products/${encodeURIComponent(sku)}`, { method: "DELETE" }),
+  deleteInventory: (sku: string) =>
+    request<{ sku: string; deleted: boolean }>(
+      `/data/inventory/${encodeURIComponent(sku)}`,
+      { method: "DELETE" }
+    ),
+
   // forecast
   runForecast: (body: ForecastRunRequest) =>
     request<ForecastRunResponse>("/forecast/run", {
@@ -133,6 +152,10 @@ export const api = {
   getForecastStatus: (jobId: string) =>
     request<ForecastStatusResponse>(`/forecast/status/${jobId}`),
   getLatestJob: () => request<ForecastStatusResponse>("/forecast/latest"),
+  cancelForecast: (jobId: string) =>
+    request<ForecastStatusResponse>(`/forecast/cancel/${encodeURIComponent(jobId)}`, {
+      method: "POST",
+    }),
   getForecast: (sku: string, jobId: string) =>
     request<ForecastSeries>(`/forecast/${encodeURIComponent(sku)}${qs({ job_id: jobId })}`),
   inspectPipeline: (sku: string, opts?: { service_level?: number; review_period_days?: number }) =>

@@ -5,10 +5,13 @@ land in Phase 4.
 """
 from __future__ import annotations
 
+import logging
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import select
 
 from app.api.backtest import router as backtest_router
 from app.api.data import router as data_router
@@ -17,13 +20,35 @@ from app.api.health import router as health_router
 from app.api.metrics import router as metrics_router
 from app.api.reorder import router as reorder_router
 from app.api.templates import router as templates_router
-from app.db import init_db
+from app.db import SessionLocal, init_db
+from app.models import ForecastJob
+
+log = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     # create_all is idempotent — safe to run on every boot.
     init_db()
+
+    # Clean up "ghost" running jobs from a previous crash/restart. Without
+    # this, the dashboard's resume effect sees status='running', starts
+    # polling, and looks like the forecast magically re-ran on app reload.
+    try:
+        with SessionLocal() as db:
+            stale = db.scalars(
+                select(ForecastJob).where(ForecastJob.status == "running")
+            ).all()
+            for job in stale:
+                job.status = "failed"
+                job.message = "Server restarted while job was running."
+                job.completed_at = datetime.now(timezone.utc)
+            if stale:
+                db.commit()
+                log.warning("Marked %d stale running job(s) as failed", len(stale))
+    except Exception:
+        log.exception("Failed to clean up stale running jobs on startup")
+
     yield
 
 

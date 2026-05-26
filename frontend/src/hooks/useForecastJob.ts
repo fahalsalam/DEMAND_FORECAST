@@ -99,6 +99,31 @@ export function useForecastJob() {
     [startPolling]
   );
 
+  const cancel = useCallback(async () => {
+    // Only cancellable while a job is in flight.
+    if (state.kind !== "running" && state.kind !== "starting") return;
+    const jobId = state.kind === "running" ? state.jobId : null;
+    if (!jobId) {
+      // Hadn't gotten a job_id yet — just reset local state.
+      stopPolling();
+      setState({ kind: "idle" });
+      return;
+    }
+    try {
+      const updated = await api.cancelForecast(jobId);
+      stopPolling();
+      setState({ kind: "failed", jobId, status: updated });
+    } catch (err) {
+      const msg =
+        err instanceof ApiError
+          ? `${err.status} — ${err.message}`
+          : err instanceof Error
+          ? err.message
+          : "Unknown error";
+      setState({ kind: "error", message: msg });
+    }
+  }, [state, stopPolling]);
+
   // Resume any cached job on mount — survives reloads.
   useEffect(() => {
     const cached = localStorage.getItem(STORAGE_KEY);
@@ -121,5 +146,5 @@ export function useForecastJob() {
     return () => stopPolling();
   }, [startPolling, stopPolling]);
 
-  return { state, run };
+  return { state, run, cancel };
 }

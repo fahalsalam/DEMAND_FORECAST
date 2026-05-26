@@ -101,6 +101,46 @@ def get_latest_job(db: Session = Depends(get_db)) -> ForecastStatusResponse:
     )
 
 
+@router.post("/cancel/{job_id}", response_model=ForecastStatusResponse)
+def cancel_forecast(job_id: str, db: Session = Depends(get_db)) -> ForecastStatusResponse:
+    """Cancel a running forecast job.
+
+    Marks the job's row as failed (message="Cancelled by user"). The
+    background runner checks the job's status between SKUs and bails
+    out cleanly when it sees the cancellation. Worker processes that
+    are already mid-fit can't be killed cleanly (Prophet/Stan don't
+    cooperate with interrupts), but any unfinished SKUs are skipped
+    and the pool is shut down without waiting.
+
+    Returns the updated status row so the UI can stop polling.
+    """
+    job = db.get(ForecastJob, job_id)
+    if job is None:
+        raise HTTPException(404, f"Job {job_id} not found.")
+    if job.status != "running":
+        raise HTTPException(
+            409,
+            f"Job is '{job.status}' — only running jobs can be cancelled.",
+        )
+    job.status = "failed"
+    job.message = "Cancelled by user."
+    job.completed_at = datetime.now(timezone.utc)
+    db.commit()
+
+    skus_processed = db.execute(
+        select(ForecastResult.sku).where(ForecastResult.job_id == job_id).distinct()
+    ).scalars().all()
+    return ForecastStatusResponse(
+        job_id=job.job_id,
+        status=job.status,
+        created_at=job.created_at,
+        completed_at=job.completed_at,
+        service_level=job.service_level,
+        message=job.message,
+        skus_processed=len(skus_processed),
+    )
+
+
 @router.get("/status/{job_id}", response_model=ForecastStatusResponse)
 def get_status(job_id: str, db: Session = Depends(get_db)) -> ForecastStatusResponse:
     job = db.get(ForecastJob, job_id)

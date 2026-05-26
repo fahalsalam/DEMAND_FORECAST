@@ -1,9 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
-import { api } from "../api/client";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { api, ApiError } from "../api/client";
 import type { ProductOut } from "../types";
 
 const fmtCurrency = (n: number) =>
   new Intl.NumberFormat(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(n);
+
+interface Toast {
+  kind: "ok" | "err";
+  text: string;
+}
 
 export function ProductsTable() {
   const [rows, setRows] = useState<ProductOut[]>([]);
@@ -11,27 +16,70 @@ export function ProductsTable() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [confirmSku, setConfirmSku] = useState<string | null>(null);
+  const [busySku, setBusySku] = useState<string | null>(null);
+  const [toast, setToast] = useState<Toast | null>(null);
 
   useEffect(() => {
     void api.listCategories().then(setCats).catch(() => setCats([]));
   }, []);
 
-  useEffect(() => {
+  const fetchRows = useCallback(async () => {
     setLoading(true);
-    api
-      .listProducts({ search: search.trim() || undefined, category: category || undefined })
-      .then(setRows)
-      .catch(() => setRows([]))
-      .finally(() => setLoading(false));
+    try {
+      const data = await api.listProducts({
+        search: search.trim() || undefined,
+        category: category || undefined,
+      });
+      setRows(data);
+    } catch {
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
   }, [search, category]);
+
+  useEffect(() => { void fetchRows(); }, [fetchRows]);
+
+  // Auto-dismiss toast after a moment
+  useEffect(() => {
+    if (!toast) return;
+    const t = window.setTimeout(() => setToast(null), 5500);
+    return () => window.clearTimeout(t);
+  }, [toast]);
 
   const totalValue = useMemo(
     () => rows.reduce((s, r) => s + r.unit_cost, 0),
     [rows]
   );
 
+  async function doDelete(p: ProductOut) {
+    setBusySku(p.sku);
+    try {
+      const res = await api.deleteProduct(p.sku);
+      const d = res.deleted;
+      setToast({
+        kind: "ok",
+        text: `Deleted ${res.sku} — ${res.name} (${d.sales_rows} sales rows, ${d.inventory_rows} inventory, ${d.forecast_results} forecast rows cleared)`,
+      });
+      setConfirmSku(null);
+      await fetchRows();
+    } catch (err) {
+      setToast({
+        kind: "err",
+        text: `Could not delete ${p.sku}: ${err instanceof ApiError ? err.message : err instanceof Error ? err.message : "error"}`,
+      });
+    } finally {
+      setBusySku(null);
+    }
+  }
+
   return (
     <div className="browse">
+      {toast && (
+        <div className={`row-toast row-toast-${toast.kind}`}>{toast.text}</div>
+      )}
+
       <div className="browse-controls">
         <input
           type="text"
@@ -51,7 +99,7 @@ export function ProductsTable() {
         </div>
       </div>
 
-      <div className="data-table">
+      <div className="data-table products-with-actions">
         <div className="data-thead">
           <div>SKU</div>
           <div>Name</div>
@@ -61,6 +109,7 @@ export function ProductsTable() {
           <div className="num">Order cost</div>
           <div className="num">Holding</div>
           <div>Supplier</div>
+          <div className="td-actions-col">Actions</div>
         </div>
         <div className="data-tbody">
           {rows.length === 0 && !loading && (
@@ -76,6 +125,42 @@ export function ProductsTable() {
               <div className="num">{fmtCurrency(p.ordering_cost)}</div>
               <div className="num">{fmtCurrency(p.holding_cost_per_unit)}</div>
               <div className="muted-cell">{p.supplier ?? "—"}</div>
+              <div className="td-actions">
+                {confirmSku === p.sku ? (
+                  busySku === p.sku ? (
+                    <span className="muted-sm">deleting…</span>
+                  ) : (
+                    <>
+                      <span className="confirm-text">Delete this + all its sales?</span>
+                      <button
+                        className="btn-mini btn-mini-danger"
+                        onClick={() => void doDelete(p)}
+                      >
+                        Yes
+                      </button>
+                      <button
+                        className="btn-mini"
+                        onClick={() => setConfirmSku(null)}
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  )
+                ) : (
+                  <button
+                    className="row-delete"
+                    title={`Delete ${p.sku} (cascades to sales + inventory)`}
+                    onClick={() => setConfirmSku(p.sku)}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+                      <path d="M10 11v6M14 11v6" />
+                      <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+                    </svg>
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>

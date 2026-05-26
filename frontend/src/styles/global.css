@@ -1471,6 +1471,98 @@ body {
   font-size: 13px;
 }
 
+/* Row actions column (delete button + inline confirm) */
+.data-table.products-with-actions .data-thead,
+.data-table.products-with-actions .data-row {
+  grid-template-columns:
+    minmax(90px, 0.7fr) minmax(160px, 1.4fr) minmax(100px, 0.6fr)
+    80px 70px 90px 80px minmax(100px, 0.7fr) 200px;
+}
+.data-table.inv-with-actions .data-thead,
+.data-table.inv-with-actions .data-row {
+  grid-template-columns:
+    minmax(90px, 0.7fr) minmax(160px, 1.4fr) minmax(100px, 0.6fr)
+    minmax(80px, 0.5fr) 70px 80px 100px minmax(90px, 0.7fr) 200px;
+}
+.td-actions-col {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.td-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+.row-delete {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-3);
+  width: 30px; height: 28px;
+  border-radius: 8px;
+  display: grid; place-items: center;
+  cursor: pointer;
+  transition: all 100ms ease;
+}
+.row-delete:hover {
+  border-color: rgba(220, 38, 38, 0.45);
+  background: rgba(220, 38, 38, 0.08);
+  color: var(--danger);
+}
+.row-delete svg { width: 14px; height: 14px; }
+
+.confirm-text {
+  font-size: 11px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.btn-mini {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-strong);
+  border: 1px solid var(--border-strong);
+  color: var(--text-1);
+  cursor: pointer;
+}
+.btn-mini:hover { background: var(--surface); }
+.btn-mini-danger {
+  background: rgba(220, 38, 38, 0.12);
+  color: var(--danger);
+  border-color: rgba(220, 38, 38, 0.40);
+}
+.btn-mini-danger:hover { background: rgba(220, 38, 38, 0.20); }
+.muted-sm { font-size: 11px; color: var(--text-3); }
+
+.row-toast {
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid;
+  animation: toast-in 200ms ease;
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+.row-toast-ok {
+  background: rgba(22, 163, 74, 0.08);
+  border-color: rgba(22, 163, 74, 0.30);
+  color: var(--success);
+}
+.row-toast-err {
+  background: rgba(220, 38, 38, 0.08);
+  border-color: rgba(220, 38, 38, 0.30);
+  color: var(--danger);
+}
+
 /* Inventory variation */
 .data-table.inv-cols .data-thead,
 .data-table.inv-cols .data-row {
@@ -1627,6 +1719,24 @@ body {
   filter: brightness(1.08);
   border-color: transparent;
 }
+
+.run-buttons {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.btn.btn-cancel {
+  background: rgba(220, 38, 38, 0.10);
+  color: var(--danger);
+  border: 1px solid rgba(220, 38, 38, 0.40);
+  box-shadow: none;
+}
+.btn.btn-cancel:hover:not(:disabled) {
+  background: rgba(220, 38, 38, 0.18);
+  border-color: rgba(220, 38, 38, 0.55);
+  transform: translateY(-1px);
+}
+.btn.btn-cancel svg { color: currentColor; }
 
 .run-controls {
   display: grid;
