@@ -38,6 +38,112 @@ CATEGORIES = {
 }
 
 
+# ---------------------------------------------------------------------------
+# SEASONAL_DEMO — extreme-seasonality SKUs for the viva
+#
+# Each entry has a `pattern` key that picks the demand-shape function below.
+# These get long histories (2 yrs) so the contest's 28-day validation window
+# always has plenty of training data.
+# ---------------------------------------------------------------------------
+SEASONAL_DEMO: list[dict] = [
+    {
+        # Massive summer peak (~July), almost dead in winter — classic
+        # cold-drink pattern. Prophet's yearly_seasonality will nail this.
+        "sku": "SEASONAL-SUMMER-DRINK",
+        "name": "Iced Lemonade 500ml",
+        "category": "Beverages",
+        "unit_cost": 1.80, "lead_time_days": 5,
+        "ordering_cost": 45, "holding_cost_per_unit": 0.40,
+        "supplier": "Demo Beverages Co.",
+        "pattern": "summer_peak",
+        "base_daily": 22,
+    },
+    {
+        # 2.5× weekend lift, weekday lull. Strongest weekly seasonality.
+        # Best demo of weekly cycles in the Forecasts chart.
+        "sku": "SEASONAL-WEEKEND-PIZZA",
+        "name": "Frozen Pizza 12in",
+        "category": "Snacks",
+        "unit_cost": 4.50, "lead_time_days": 4,
+        "ordering_cost": 35, "holding_cost_per_unit": 0.60,
+        "supplier": "Demo Frozen Foods",
+        "pattern": "weekend_blast",
+        "base_daily": 18,
+    },
+    {
+        # Sharp Gaussian peak around mid-December. Dead the rest of the year.
+        # Holiday/festive-season pattern.
+        "sku": "SEASONAL-XMAS-LIGHTS",
+        "name": "LED Holiday String Lights",
+        "category": "Household",
+        "unit_cost": 8.20, "lead_time_days": 14,
+        "ordering_cost": 55, "holding_cost_per_unit": 0.90,
+        "supplier": "Demo Holiday Goods",
+        "pattern": "xmas_spike",
+        "base_daily": 4,
+    },
+    {
+        # Reverse weekly: Mon-Fri high (office consumption), weekends low.
+        # Shows the contest correctly identifies a non-obvious weekly pattern.
+        "sku": "SEASONAL-OFFICE-COFFEE",
+        "name": "Coffee Pods 60ct",
+        "category": "Beverages",
+        "unit_cost": 12.00, "lead_time_days": 7,
+        "ordering_cost": 40, "holding_cost_per_unit": 1.20,
+        "supplier": "Demo Coffee Co.",
+        "pattern": "weekday_office",
+        "base_daily": 24,
+    },
+]
+
+
+def _seasonal_demand(pattern: str, d: date, base: float) -> float:
+    """Per-day expected demand shape for the SEASONAL_DEMO SKUs.
+
+    Returns the *mean* — Poisson noise is added by the caller so the series
+    looks realistic. Each pattern is exaggerated enough to be visible at a
+    glance in the forecast chart.
+    """
+    yday = d.timetuple().tm_yday
+    dow = d.weekday()
+
+    if pattern == "summer_peak":
+        # sin peaks at yday=80; shift so peak is around July 1 (yday ~182).
+        # Amplitude 0.90 → demand swings between 10% and 190% of base.
+        annual = 1.0 + 0.90 * math.sin(2 * math.pi * (yday - 80) / 365)
+        weekly = 1.15 if dow >= 5 else 1.0
+        return base * max(0.05, annual) * weekly
+
+    if pattern == "weekend_blast":
+        # Workdays ~0.9×, Sat 2.5×, Sun 2.2×.
+        if dow == 5:
+            return base * 2.5
+        if dow == 6:
+            return base * 2.2
+        return base * 0.9
+
+    if pattern == "xmas_spike":
+        # Gaussian bump centred on Dec 15 (yday ~349), σ=20 days.
+        # Peak demand = 9× base at the very centre.
+        peak_yday = 349
+        gauss = math.exp(-((yday - peak_yday) ** 2) / (2 * 20 ** 2))
+        return base * (1.0 + 8.0 * gauss)
+
+    if pattern == "weekday_office":
+        # Mon-Fri: 1.3× (busy office), Sat-Sun: 0.3× (office closed).
+        return base * (1.3 if dow < 5 else 0.3)
+
+    # Unknown pattern → flat baseline.
+    return base
+
+
+def _is_seasonal_demo(sku: str) -> bool:
+    return sku.startswith("SEASONAL-")
+
+
+_SEASONAL_BY_SKU = {p["sku"]: p for p in SEASONAL_DEMO}
+
+
 def _gen_products() -> list[dict]:
     products: list[dict] = []
     idx = 1
@@ -76,26 +182,43 @@ def _gen_products() -> list[dict]:
                 "supplier": "Supplier-01",
             }
         )
+    # Highly-seasonal demo SKUs (for the viva).
+    for p in SEASONAL_DEMO:
+        products.append({k: v for k, v in p.items() if k not in ("pattern", "base_daily")})
     return products
 
 
 def _gen_sales(sku: str, category: str, history_days: int) -> list[dict]:
-    """Synthesize daily sales with weekly seasonality + sparse promo/seasonal spikes."""
-    cfg = CATEGORIES[category]
-    base = cfg["base"] * RNG.uniform(0.6, 1.4)
-    season_amp = cfg["season_amp"]
+    """Synthesize daily sales with weekly seasonality + sparse promo/seasonal spikes.
+
+    Seasonal demo SKUs (SEASONAL-*) get their own demand-shape function so the
+    pattern is visible in the forecast chart.
+    """
+    is_seasonal = _is_seasonal_demo(sku)
+    if is_seasonal:
+        spec = _SEASONAL_BY_SKU[sku]
+        base = float(spec["base_daily"])
+        pattern = spec["pattern"]
+        season_amp = 0.0          # unused, but keep symmetry
+    else:
+        cfg = CATEGORIES[category]
+        base = cfg["base"] * RNG.uniform(0.6, 1.4)
+        season_amp = cfg["season_amp"]
 
     rows: list[dict] = []
     start = TODAY - timedelta(days=history_days)
     for n in range(history_days):
         d = start + timedelta(days=n)
-        # weekly seasonality — weekends ~30% higher
-        dow = d.weekday()
-        dow_mult = 1.3 if dow >= 5 else 1.0
-        # annual seasonality (sinusoid)
-        annual = 1.0 + season_amp * math.sin(2 * math.pi * d.timetuple().tm_yday / 365)
-        mean = base * dow_mult * annual
-        qty = max(0, int(NP_RNG.poisson(mean)))
+        if is_seasonal:
+            mean = _seasonal_demand(pattern, d, base)
+        else:
+            # weekly seasonality — weekends ~30% higher
+            dow = d.weekday()
+            dow_mult = 1.3 if dow >= 5 else 1.0
+            # annual seasonality (sinusoid)
+            annual = 1.0 + season_amp * math.sin(2 * math.pi * d.timetuple().tm_yday / 365)
+            mean = base * dow_mult * annual
+        qty = max(0, int(NP_RNG.poisson(max(0.01, mean))))
 
         # promo spike ~ once every 60 days
         promo = RNG.random() < (1 / 60)
