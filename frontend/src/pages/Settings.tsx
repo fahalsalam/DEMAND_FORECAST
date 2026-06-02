@@ -126,9 +126,12 @@ export function Settings() {
 
       {editingId !== null && (
         <section className="festival-form">
-          <h3>{editingId === "new" ? "Add festival" : "Edit festival"}</h3>
+          <h3>{editingId === "new" ? "Add a festival" : "Edit festival"}</h3>
           <div className="festival-grid">
-            <Field label="Name">
+            <Field
+              label="Festival name"
+              hint="What people call this event (e.g. Diwali, Christmas, Eid)."
+            >
               <input
                 className="search-input"
                 value={form.name}
@@ -136,7 +139,11 @@ export function Settings() {
                 placeholder="e.g. Diwali"
               />
             </Field>
-            <Field label="Date">
+
+            <Field
+              label="Date of the festival"
+              hint="The day the festival falls on."
+            >
               <input
                 type="date"
                 className="search-input"
@@ -144,7 +151,11 @@ export function Settings() {
                 onChange={(e) => setForm({ ...form, date: e.target.value })}
               />
             </Field>
-            <Field label="Expected uplift (×)">
+
+            <Field
+              label="How much more will they buy?"
+              hint="1.5 = 50% more than a normal day. 2.0 = double. Type a number between 0.5 and 20."
+            >
               <input
                 type="number"
                 step="0.1" min="0.5" max="20"
@@ -153,7 +164,11 @@ export function Settings() {
                 onChange={(e) => setForm({ ...form, expected_uplift: Number(e.target.value) })}
               />
             </Field>
-            <Field label="Lead days (before)">
+
+            <Field
+              label="Shopping starts how many days before?"
+              hint="When do customers begin stocking up? E.g. people buy Diwali gifts 14 days early."
+            >
               <input
                 type="number" min="0" max="90"
                 className="search-input"
@@ -161,7 +176,11 @@ export function Settings() {
                 onChange={(e) => setForm({ ...form, lead_days: Number(e.target.value) })}
               />
             </Field>
-            <Field label="Tail days (after)">
+
+            <Field
+              label="Demand stays high for how many days after?"
+              hint="How many days the lift continues post-festival before sales return to normal."
+            >
               <input
                 type="number" min="0" max="30"
                 className="search-input"
@@ -169,22 +188,31 @@ export function Settings() {
                 onChange={(e) => setForm({ ...form, tail_days: Number(e.target.value) })}
               />
             </Field>
-            <Field label="Active?">
+
+            <Field
+              label="Show this festival on the chart?"
+              hint="Turn off to keep the festival saved but hide its overlay on the Seasonal Outlook."
+            >
               <label className="check-row">
                 <input
                   type="checkbox"
                   checked={form.active}
                   onChange={(e) => setForm({ ...form, active: e.target.checked })}
                 />
-                <span>Show on seasonal chart</span>
+                <span>Yes, mark it on the seasonal chart</span>
               </label>
             </Field>
-            <Field label="Notes" full>
+
+            <Field
+              label="Notes (optional)"
+              hint="A short description for your team — e.g. which categories see the biggest lift."
+              full
+            >
               <input
                 className="search-input"
                 value={form.notes ?? ""}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                placeholder="optional — what categories this affects, why, etc."
+                placeholder="e.g. Sweets + lights + gifts. Lift hits Snacks the hardest."
               />
             </Field>
           </div>
@@ -206,11 +234,11 @@ export function Settings() {
           <div className="data-table festival-cols">
             <div className="data-thead">
               <div>Date</div>
-              <div>Name</div>
-              <div className="num">Uplift</div>
-              <div className="num">Lead</div>
-              <div className="num">Tail</div>
-              <div>Status</div>
+              <div>Festival</div>
+              <div className="num" title="How much more they'll buy (e.g. 1.7× = 70% more)">Demand boost</div>
+              <div className="num" title="Days early the rush starts">Starts early</div>
+              <div className="num" title="Days the effect continues after">Lasts after</div>
+              <div>On chart?</div>
               <div>Notes</div>
               <div className="td-actions-col">Actions</div>
             </div>
@@ -257,11 +285,22 @@ export function Settings() {
   );
 }
 
-function Field({ label, full, children }: { label: string; full?: boolean; children: React.ReactNode }) {
+function Field({
+  label,
+  hint,
+  full,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  full?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <div className={`field ${full ? "field-full" : ""}`}>
       <label>{label}</label>
       {children}
+      {hint && <small className="field-hint">{hint}</small>}
     </div>
   );
 }

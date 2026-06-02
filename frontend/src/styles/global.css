@@ -1454,6 +1454,15 @@ body {
   color: var(--text-2);
 }
 
+.field-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-3);
+  font-style: normal;
+}
+
 /* Cancel the .search-input flex-basis when the input sits inside a
    column-flex .field (otherwise it stretches to ~280px tall). */
 .field .search-input,
