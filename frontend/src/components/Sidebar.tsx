@@ -17,7 +17,9 @@ const NAV: NavItem[] = [
   { key: "dashboard", label: "Dashboard", icon: "dashboard", description: "KPIs + run forecast" },
   { key: "forecasts", label: "Forecasts", icon: "chart",     description: "Per-SKU forecast band" },
   { key: "alerts",    label: "Alerts",    icon: "alerts",    description: "Reorder + stockout risk" },
-  { key: "backtest",  label: "Backtest",  icon: "compare",   description: "Baseline vs system" },
+  // Backtest is hidden from the menu but the page is still functional —
+  // re-enable by uncommenting the entry below.
+  // { key: "backtest", label: "Backtest", icon: "compare", description: "Baseline vs system" },
   { key: "inspector", label: "Inspector", icon: "inspector", description: "See the model pipeline" },
   { key: "data",      label: "Data",      icon: "data",      description: "Upload products + sales" },
 ];
