@@ -26,7 +26,10 @@ from datetime import timedelta
 import numpy as np
 import pandas as pd
 
-from app.core.forecasting import arima_model, lgbm_model, prophet_model  # noqa: F401
+# lgbm is lightweight; arima_model + prophet_model pull in pmdarima/stan which
+# are heavy. We lazy-import them inside the contest so that fast_mode workers
+# don't pay the ~15 s startup cost.
+from app.core.forecasting import lgbm_model
 from app.core.forecasting.preprocess import (
     MIN_HISTORY_DAYS,
     VALIDATION_DAYS,
@@ -167,8 +170,14 @@ def forecast_sku(
     lead_time_days: int,
     review_period: int = DEFAULT_REVIEW_PERIOD,
     category_daily_avg: float | None = None,
+    fast_mode: bool = False,
 ) -> ForecastOutput:
-    """Run the model contest for one SKU and return the winner's forecast."""
+    """Run the model contest for one SKU and return the winner's forecast.
+
+    Set `fast_mode=True` to skip ARIMA + Prophet entirely and use only
+    LightGBM. Drops per-SKU cost from ~25-30s to ~1-2s. Accuracy is usually
+    within a few % of the full contest; great for live demos.
+    """
     series = to_daily_series(sales)
     horizon = lead_time_days + review_period
 
@@ -203,12 +212,23 @@ def forecast_sku(
         )
 
     # --- contest --------------------------------------------------------
+    # In fast_mode we only run LightGBM (~1-2 s per SKU). The full contest
+    # adds ARIMA (~3-5 s) and Prophet (~10-15 s) for the (usually small)
+    # accuracy bump of being able to pick the best model per SKU.
+    #
+    # ARIMA + Prophet are *lazy* imported here so fast_mode dodges the
+    # ~15 s per-worker startup cost of importing pmdarima + cmdstanpy.
+    if fast_mode:
+        contest_models = (("lightgbm", lgbm_model.fit_forecast),)
+    else:
+        from app.core.forecasting import arima_model, prophet_model
+        contest_models = (
+            ("arima",    arima_model.fit_forecast),
+            ("prophet",  prophet_model.fit_forecast),
+            ("lightgbm", lgbm_model.fit_forecast),
+        )
     candidates: list[_Candidate] = []
-    for name, fn in (
-        ("arima", arima_model.fit_forecast),
-        ("prophet", prophet_model.fit_forecast),
-        ("lightgbm", lgbm_model.fit_forecast),
-    ):
+    for name, fn in contest_models:
         c = _safe_fit(name, fn, train_val, val)
         if c is not None:
             candidates.append(c)
@@ -228,11 +248,14 @@ def forecast_sku(
     scores_by_model = {c.name: c.scores for c in candidates}
 
     # --- refit winner on FULL history ----------------------------------
-    fit_fn = {
-        "arima": arima_model.fit_forecast,
-        "prophet": prophet_model.fit_forecast,
-        "lightgbm": lgbm_model.fit_forecast,
-    }[winner.name]
+    if winner.name == "lightgbm":
+        fit_fn = lgbm_model.fit_forecast
+    elif winner.name == "arima":
+        from app.core.forecasting import arima_model
+        fit_fn = arima_model.fit_forecast
+    else:  # prophet
+        from app.core.forecasting import prophet_model
+        fit_fn = prophet_model.fit_forecast
     try:
         yhat, lo, hi = fit_fn(series, horizon)
     except Exception as exc:  # last-ditch: use the validation-only forecast extended
@@ -296,7 +319,9 @@ def inspect_sku(
     # Time-based split.
     train_val, val = time_based_split(series, VALIDATION_DAYS)
 
-    # Run all three.
+    # Run all three (inspect_sku always uses the full contest — it's
+    # explicitly explaining the contest to the reviewer).
+    from app.core.forecasting import arima_model, prophet_model
     traces: list[ModelTrace] = []
     candidates: list[_Candidate] = []
     for name, fn in (

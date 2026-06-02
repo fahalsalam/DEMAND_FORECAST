@@ -69,6 +69,7 @@ def start_forecast(
         job_id=job_id,
         service_level=body.service_level,
         review_period_days=body.review_period_days,
+        fast_mode=body.fast_mode,
     )
     return ForecastRunResponse(job_id=job_id)
 

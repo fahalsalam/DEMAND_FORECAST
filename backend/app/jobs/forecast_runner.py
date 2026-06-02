@@ -71,6 +71,7 @@ class _SkuTask:
     category_daily_avg: float | None
     service_level: float
     review_period_days: int
+    fast_mode: bool = False
 
 
 @dataclass
@@ -92,6 +93,7 @@ def _run_one_sku(task: _SkuTask) -> _SkuResult:
             lead_time_days=int(task.product["lead_time_days"]),
             review_period=int(task.review_period_days),
             category_daily_avg=task.category_daily_avg,
+            fast_mode=task.fast_mode,
         )
 
         # NaN MAPE for cold-start fallback → store as 0.0
@@ -227,6 +229,7 @@ def run_forecast_job(
     service_level: float = 0.95,
     review_period_days: int = 7,
     sku_filter: list[str] | None = None,
+    fast_mode: bool = False,
 ) -> None:
     """Top-level background task. Uses its own DB session.
 
@@ -291,14 +294,22 @@ def run_forecast_job(
                 category_daily_avg=category_avg.get(p.category),
                 service_level=service_level,
                 review_period_days=review_period_days,
+                fast_mode=fast_mode,
             )
             for p in products
         ]
 
-        n_workers = _resolve_worker_count()
-        # Cap workers at min(cpu, len(tasks)) — pointless to spin up more.
-        n_workers = max(1, min(n_workers, len(tasks)))
-        log.info("Forecast job %s: %d SKUs, %d workers", job_id, len(tasks), n_workers)
+        # Fast mode is cheap per SKU (~2 s) so ProcessPool's spawn overhead
+        # (~15 s/worker on macOS) makes parallelism actively WORSE. Sequential
+        # is faster and more predictable.
+        if fast_mode:
+            n_workers = 1
+        else:
+            n_workers = _resolve_worker_count()
+            # Cap workers at min(cpu, len(tasks)) — pointless to spin up more.
+            n_workers = max(1, min(n_workers, len(tasks)))
+        log.info("Forecast job %s: %d SKUs, %d workers, fast_mode=%s",
+                 job_id, len(tasks), n_workers, fast_mode)
 
         success = 0
         failure = 0

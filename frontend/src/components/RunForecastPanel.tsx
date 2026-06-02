@@ -4,13 +4,18 @@ import type { RunState } from "../hooks/useForecastJob";
 interface Props {
   state: RunState;
   totalSkus?: number;
-  onRun: (req: { service_level: number; review_period_days: number }) => void;
+  onRun: (req: {
+    service_level: number;
+    review_period_days: number;
+    fast_mode: boolean;
+  }) => void;
   onCancel?: () => void;
 }
 
 export function RunForecastPanel({ state, totalSkus, onRun, onCancel }: Props) {
   const [serviceLevel, setServiceLevel] = useState(0.95);
   const [reviewPeriod, setReviewPeriod] = useState(7);
+  const [fastMode, setFastMode] = useState(true);
 
   const isRunning = state.kind === "starting" || state.kind === "running";
   const progress =
@@ -27,13 +32,21 @@ export function RunForecastPanel({ state, totalSkus, onRun, onCancel }: Props) {
       <header className="run-head">
         <div>
           <h3>Run Forecast</h3>
-          <p>Picks the best of ARIMA, Prophet, and LightGBM per SKU.</p>
+          <p>
+            {fastMode
+              ? "Fast mode — LightGBM only. ~10 seconds for 30 SKUs."
+              : "Best accuracy — full 3-model contest (ARIMA, Prophet, LightGBM). ~1-2 min for 30 SKUs."}
+          </p>
         </div>
         <div className="run-buttons">
           <button
             className={`btn btn-primary ${isRunning ? "spinning" : ""}`}
             onClick={() =>
-              onRun({ service_level: serviceLevel, review_period_days: reviewPeriod })
+              onRun({
+                service_level: serviceLevel,
+                review_period_days: reviewPeriod,
+                fast_mode: fastMode,
+              })
             }
             disabled={isRunning}
           >
@@ -68,6 +81,40 @@ export function RunForecastPanel({ state, totalSkus, onRun, onCancel }: Props) {
           )}
         </div>
       </header>
+
+      <div className="mode-toggle">
+        <div className="mode-toggle-label">Mode</div>
+        <div className="mode-toggle-buttons" role="radiogroup" aria-label="Forecast mode">
+          <button
+            type="button"
+            role="radio"
+            aria-checked={fastMode}
+            className={`mode-btn ${fastMode ? "is-on" : ""}`}
+            onClick={() => setFastMode(true)}
+            disabled={isRunning}
+          >
+            <span className="mode-btn-icon">⚡</span>
+            <span className="mode-btn-body">
+              <strong>Fast</strong>
+              <em>LightGBM only · ~10 s</em>
+            </span>
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={!fastMode}
+            className={`mode-btn ${!fastMode ? "is-on" : ""}`}
+            onClick={() => setFastMode(false)}
+            disabled={isRunning}
+          >
+            <span className="mode-btn-icon">🏆</span>
+            <span className="mode-btn-body">
+              <strong>Best accuracy</strong>
+              <em>3-model contest · ~1–2 min</em>
+            </span>
+          </button>
+        </div>
+      </div>
 
       <div className="run-controls">
         <div className="control">

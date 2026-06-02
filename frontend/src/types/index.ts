@@ -75,6 +75,7 @@ export type JobStatus = "running" | "complete" | "failed";
 export interface ForecastRunRequest {
   service_level: number;
   review_period_days?: number;
+  fast_mode?: boolean;
 }
 
 export interface ForecastRunResponse {

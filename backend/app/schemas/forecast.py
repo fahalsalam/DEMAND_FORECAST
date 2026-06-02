@@ -27,6 +27,11 @@ class ForecastRunRequest(BaseModel):
         description="Target service level (Z factor). 0.95 -> Z=1.6449.",
     )
     review_period_days: int = Field(7, ge=1, le=60)
+    fast_mode: bool = Field(
+        False,
+        description="If true, skip ARIMA + Prophet and only run LightGBM "
+                    "per SKU. ~10× faster, slight accuracy trade-off.",
+    )
 
 
 class ForecastRunResponse(BaseModel):
