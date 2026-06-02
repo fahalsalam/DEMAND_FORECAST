@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { RunState } from "../hooks/useForecastJob";
 
 interface Props {
@@ -12,12 +12,55 @@ interface Props {
   onCancel?: () => void;
 }
 
+/**
+ * Parse a backend ISO timestamp as UTC. SQLAlchemy returns naive UTC strings
+ * (no 'Z' suffix); JS `new Date(...)` would interpret those as LOCAL time,
+ * which would skew elapsed-time math by the user's UTC offset.
+ */
+function parseBackendTs(s: string | null | undefined): number | null {
+  if (!s) return null;
+  const hasTZ = /([Zz]|[+-]\d{2}:?\d{2})$/.test(s);
+  return new Date(hasTZ ? s : s + "Z").getTime();
+}
+
+function fmtElapsed(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  const m = Math.floor(seconds / 60);
+  const r = seconds % 60;
+  return r === 0 ? `${m}m` : `${m}m ${r}s`;
+}
+
 export function RunForecastPanel({ state, totalSkus, onRun, onCancel }: Props) {
   const [serviceLevel, setServiceLevel] = useState(0.95);
   const [reviewPeriod, setReviewPeriod] = useState(7);
   const [fastMode, setFastMode] = useState(true);
+  const [, setTick] = useState(0);
 
   const isRunning = state.kind === "starting" || state.kind === "running";
+
+  // Re-render once per second while running so the elapsed counter ticks.
+  useEffect(() => {
+    if (!isRunning) return;
+    const id = window.setInterval(() => setTick((t) => t + 1), 1000);
+    return () => window.clearInterval(id);
+  }, [isRunning]);
+
+  // Compute elapsed seconds using backend's authoritative timestamps.
+  // For in-flight runs: elapsed = now - created_at
+  // For finished runs:  elapsed = completed_at - created_at
+  const elapsedSec: number | null = useMemo(() => {
+    if (state.kind === "idle" || state.kind === "starting" || state.kind === "error") {
+      return null;
+    }
+    const startedAt = parseBackendTs(state.status?.created_at);
+    if (startedAt == null) return null;
+    const endAt =
+      state.kind === "running"
+        ? Date.now()
+        : parseBackendTs(state.status?.completed_at) ?? Date.now();
+    return Math.max(0, Math.floor((endAt - startedAt) / 1000));
+  }, [state]);
+
   const progress =
     state.kind === "running" && totalSkus
       ? Math.min(100, ((state.status.skus_processed ?? 0) / totalSkus) * 100)
@@ -31,7 +74,31 @@ export function RunForecastPanel({ state, totalSkus, onRun, onCancel }: Props) {
     <section className="run-panel">
       <header className="run-head">
         <div>
-          <h3>Run Forecast</h3>
+          <h3>
+            Run Forecast
+            {elapsedSec !== null && (
+              <span
+                className={`run-timer run-timer-${state.kind}`}
+                aria-live="polite"
+                title={
+                  state.kind === "running"
+                    ? "Elapsed time since this forecast started"
+                    : state.kind === "complete"
+                    ? "Total time to forecast all SKUs"
+                    : "Time elapsed before the job ended"
+                }
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="13" r="8" />
+                  <path d="M12 9v4l2 2" />
+                  <path d="M9 2h6" />
+                </svg>
+                {state.kind === "running" && <>Running <strong>{fmtElapsed(elapsedSec)}</strong></>}
+                {state.kind === "complete" && <>Completed in <strong>{fmtElapsed(elapsedSec)}</strong></>}
+                {state.kind === "failed" && <>Stopped after <strong>{fmtElapsed(elapsedSec)}</strong></>}
+              </span>
+            )}
+          </h3>
           <p>
             {fastMode
               ? "Fast mode — LightGBM only. ~10 seconds for 30 SKUs."

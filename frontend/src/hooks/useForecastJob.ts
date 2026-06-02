@@ -124,26 +124,43 @@ export function useForecastJob() {
     }
   }, [state, stopPolling]);
 
-  // Resume any cached job on mount — survives reloads.
+  // On mount: hydrate from the cached job_id; if none, ask the backend for
+  // the latest job (so the timer + status reflect reality even on a fresh
+  // browser session). Mirrors the Dashboard's eager preload.
   useEffect(() => {
-    const cached = localStorage.getItem(STORAGE_KEY);
-    if (!cached) return;
+    let aborted = false;
     void (async () => {
+      let jobId = (() => {
+        try { return localStorage.getItem(STORAGE_KEY); } catch { return null; }
+      })();
+      if (!jobId) {
+        try {
+          const latest = await api.getLatestJob();
+          jobId = latest.job_id;
+          try { localStorage.setItem(STORAGE_KEY, jobId); } catch { /* ignore */ }
+        } catch {
+          return; // no jobs in DB yet — stay idle
+        }
+      }
+      if (aborted || !jobId) return;
       try {
-        const s = await api.getForecastStatus(cached);
+        const s = await api.getForecastStatus(jobId);
+        if (aborted) return;
         if (s.status === "complete") {
-          setState({ kind: "complete", jobId: cached, status: s });
+          setState({ kind: "complete", jobId, status: s });
         } else if (s.status === "failed") {
-          setState({ kind: "failed", jobId: cached, status: s });
+          setState({ kind: "failed", jobId, status: s });
         } else {
-          startPolling(cached);
+          startPolling(jobId);
         }
       } catch {
-        // Stale cache — silently clear and move on.
-        localStorage.removeItem(STORAGE_KEY);
+        try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
       }
     })();
-    return () => stopPolling();
+    return () => {
+      aborted = true;
+      stopPolling();
+    };
   }, [startPolling, stopPolling]);
 
   return { state, run, cancel };
