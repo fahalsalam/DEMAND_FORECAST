@@ -163,6 +163,84 @@ export interface BacktestResult {
   summary: string;
 }
 
+// ---------- festivals + seasonal ------------------------------------------
+export interface FestivalOut {
+  id: number;
+  name: string;
+  date: string;
+  expected_uplift: number;
+  lead_days: number;
+  tail_days: number;
+  active: boolean;
+  notes: string | null;
+}
+
+export interface FestivalIn {
+  name: string;
+  date: string;
+  expected_uplift: number;
+  lead_days: number;
+  tail_days: number;
+  active: boolean;
+  notes?: string | null;
+}
+
+export interface SeasonalDailyPoint {
+  date: string;
+  yhat: number;
+  yhat_lower: number;
+  yhat_upper: number;
+}
+
+export interface SeasonalMonthlyPoint {
+  month: string;       // "2026-07"
+  label: string;       // "Jul 2026"
+  yhat: number;
+  yhat_lower: number;
+  yhat_upper: number;
+}
+
+export interface SeasonalWeeklyPoint {
+  week_start: string;
+  yhat: number;
+  yhat_lower: number;
+  yhat_upper: number;
+}
+
+export interface DecompositionPoint {
+  date: string;
+  value: number;
+}
+
+export interface SeasonalFestival {
+  id: number;
+  name: string;
+  date: string;
+  window_start: string;
+  window_end: string;
+  expected_uplift: number;
+  notes: string | null;
+}
+
+export interface SeasonalOutlook {
+  sku: string;
+  name: string;
+  category: string;
+  horizon_days: number;
+  history_days: number;
+  model: string;
+  daily: SeasonalDailyPoint[];
+  weekly: SeasonalWeeklyPoint[];
+  monthly: SeasonalMonthlyPoint[];
+  decomposition: {
+    trend: DecompositionPoint[];
+    weekly: DecompositionPoint[];
+    yearly: DecompositionPoint[];
+  };
+  festivals: SeasonalFestival[];
+  summary: string;
+}
+
 // ---------- inspector ------------------------------------------------------
 export interface ModelTraceOut {
   name: string;

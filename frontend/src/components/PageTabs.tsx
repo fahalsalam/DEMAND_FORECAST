@@ -1,4 +1,12 @@
-export type PageKey = "dashboard" | "forecasts" | "alerts" | "backtest" | "data" | "inspector";
+export type PageKey =
+  | "dashboard"
+  | "forecasts"
+  | "alerts"
+  | "backtest"
+  | "data"
+  | "inspector"
+  | "seasonal"
+  | "settings";
 
 interface Tab {
   key: PageKey;

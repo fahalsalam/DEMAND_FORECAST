@@ -9,12 +9,17 @@ import { Data } from "./pages/Data";
 import { Forecasts } from "./pages/Forecasts";
 import { Inspector } from "./pages/Inspector";
 import { Login } from "./pages/Login";
+import { Seasonal } from "./pages/Seasonal";
+import { Settings } from "./pages/Settings";
 
 const NAV_KEY = "df:activePage";
 // "backtest" is intentionally excluded so users who had it cached from a
 // previous session fall back to dashboard instead of landing on a page that
 // has no sidebar entry. The Backtest page itself still exists in code.
-const VALID_PAGES: PageKey[] = ["dashboard", "forecasts", "alerts", "data", "inspector"];
+const VALID_PAGES: PageKey[] = [
+  "dashboard", "forecasts", "alerts", "data", "inspector",
+  "seasonal", "settings",
+];
 
 function loadPage(): PageKey {
   const cached =
@@ -55,6 +60,8 @@ export default function App() {
         {page === "backtest" && <Backtest />}
         {page === "data" && <Data />}
         {page === "inspector" && <Inspector />}
+        {page === "seasonal" && <Seasonal />}
+        {page === "settings" && <Settings />}
       </div>
     </div>
   );

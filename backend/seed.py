@@ -94,6 +94,19 @@ SEASONAL_DEMO: list[dict] = [
         "pattern": "weekday_office",
         "base_daily": 24,
     },
+    {
+        # Big spike in the 10 days before Eid al-Fitr. Mild baseline otherwise.
+        # The Seasonal Outlook page's festival markers will line up exactly
+        # with the historical spikes for this SKU — the demo killer.
+        "sku": "SEASONAL-EID-SWEETS",
+        "name": "Premium Date Box 500g",
+        "category": "Snacks",
+        "unit_cost": 9.50, "lead_time_days": 7,
+        "ordering_cost": 45, "holding_cost_per_unit": 0.95,
+        "supplier": "Demo Festive Foods",
+        "pattern": "eid_uplift",
+        "base_daily": 6,
+    },
 ]
 
 
@@ -132,6 +145,30 @@ def _seasonal_demand(pattern: str, d: date, base: float) -> float:
     if pattern == "weekday_office":
         # Mon-Fri: 1.3× (busy office), Sat-Sun: 0.3× (office closed).
         return base * (1.3 if dow < 5 else 0.3)
+
+    if pattern == "eid_uplift":
+        # Big spike in the 10 days before Eid al-Fitr (March/April) and a
+        # smaller one before Eid al-Adha (June). Approximate Eid dates per year:
+        #   2024:  Fitr Apr 10, Adha Jun 17
+        #   2025:  Fitr Mar 31, Adha Jun  7
+        #   2026:  Fitr Mar 21, Adha May 28
+        eids = [
+            (date(d.year, 4, 10), 2.6, 10),   # rough Fitr per year (we want
+            (date(d.year, 6, 17), 1.7, 7),    # the pattern to be visible, not
+            (date(d.year, 3, 31), 2.6, 10),   # calendrically exact)
+            (date(d.year, 6, 7),  1.7, 7),
+            (date(d.year, 3, 21), 2.6, 10),
+            (date(d.year, 5, 28), 1.7, 7),
+        ]
+        mult = 1.0
+        for ed, peak_mult, window in eids:
+            delta = (d - ed).days
+            if -window <= delta <= 2:
+                # Gaussian ramp into the festival, then quick drop after.
+                sigma = window / 2
+                bump = math.exp(-(delta ** 2) / (2 * sigma * sigma))
+                mult = max(mult, 1.0 + (peak_mult - 1.0) * bump)
+        return base * mult
 
     # Unknown pattern → flat baseline.
     return base

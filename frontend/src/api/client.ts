@@ -5,6 +5,8 @@
  */
 import type {
   BacktestResult,
+  FestivalIn,
+  FestivalOut,
   ForecastRunRequest,
   ForecastRunResponse,
   ForecastSeries,
@@ -17,6 +19,7 @@ import type {
   ReorderDecisionOut,
   ReorderStatus,
   SalesDayPoint,
+  SeasonalOutlook,
   SkuSalesSummary,
   SkuSummary,
 } from "../types";
@@ -123,6 +126,24 @@ export const api = {
     request<SkuSalesSummary[]>(`/data/sales/summaries${qs({ days })}`),
   listSalesForSku: (sku: string, days = 90) =>
     request<SalesDayPoint[]>(`/data/sales/${encodeURIComponent(sku)}${qs({ days })}`),
+
+  // festivals
+  listFestivals: (upcomingOnly = false) =>
+    request<FestivalOut[]>(`/config/festivals${qs({ upcoming_only: upcomingOnly ? "true" : undefined })}`),
+  createFestival: (body: FestivalIn) =>
+    request<FestivalOut>("/config/festivals", { method: "POST", body: JSON.stringify(body) }),
+  updateFestival: (id: number, body: FestivalIn) =>
+    request<FestivalOut>(`/config/festivals/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  deleteFestival: async (id: number): Promise<void> => {
+    const res = await fetch(`${API_BASE}/config/festivals/${id}`, { method: "DELETE" });
+    if (!res.ok && res.status !== 204) {
+      throw new ApiError(res.status, await res.text());
+    }
+  },
+
+  // seasonal outlook
+  getSeasonal: (sku: string, horizonDays = 365) =>
+    request<SeasonalOutlook>(`/forecast/seasonal/${encodeURIComponent(sku)}${qs({ horizon_days: horizonDays })}`),
 
   // delete
   deleteProduct: (sku: string) =>

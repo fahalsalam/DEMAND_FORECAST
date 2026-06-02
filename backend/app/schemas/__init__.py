@@ -10,6 +10,7 @@ from app.schemas.data import (
     UploadKind,
     UploadResult,
 )
+from app.schemas.festivals import FestivalIn, FestivalOut
 from app.schemas.forecast import (
     BacktestResult,
     ForecastPointOut,

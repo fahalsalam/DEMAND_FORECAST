@@ -14,11 +14,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select
 
 from app.api.backtest import router as backtest_router
+from app.api.config import router as config_router
+from app.api.config import seed_default_festivals
 from app.api.data import router as data_router
 from app.api.forecast import router as forecast_router
 from app.api.health import router as health_router
 from app.api.metrics import router as metrics_router
 from app.api.reorder import router as reorder_router
+from app.api.seasonal import router as seasonal_router
 from app.api.templates import router as templates_router
 from app.db import SessionLocal, init_db
 from app.models import ForecastJob
@@ -49,6 +52,15 @@ async def lifespan(_app: FastAPI):
     except Exception:
         log.exception("Failed to clean up stale running jobs on startup")
 
+    # Seed the default festival calendar on first boot.
+    try:
+        with SessionLocal() as db:
+            n = seed_default_festivals(db)
+            if n:
+                log.info("Seeded %d default festivals", n)
+    except Exception:
+        log.exception("Failed to seed default festivals on startup")
+
     yield
 
 
@@ -77,7 +89,9 @@ app.add_middleware(
 app.include_router(health_router)
 app.include_router(data_router)
 app.include_router(templates_router)
+app.include_router(config_router)
 app.include_router(forecast_router)
+app.include_router(seasonal_router)
 app.include_router(reorder_router)
 app.include_router(backtest_router)
 app.include_router(metrics_router)

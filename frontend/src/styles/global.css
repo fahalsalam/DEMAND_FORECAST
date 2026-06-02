@@ -1325,6 +1325,170 @@ body {
   .hiw-steps { grid-template-columns: 1fr; }
 }
 
+/* =========================================================
+   Seasonal Outlook + Settings (festivals)
+   ========================================================= */
+
+.seasonal-controls {
+  display: flex;
+  align-items: end;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-card);
+}
+
+.seasonal-summary {
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  background: rgba(124, 92, 255, 0.06);
+  border: 1px solid rgba(124, 92, 255, 0.25);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-1);
+}
+.seasonal-summary strong { color: var(--brand-1); }
+
+.decomp-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.decomp-card {
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+}
+.decomp-title { font-size: 13px; font-weight: 700; color: var(--text-1); }
+.decomp-desc {
+  font-size: 11px;
+  color: var(--text-3);
+  margin: 2px 0 8px;
+  line-height: 1.4;
+}
+
+/* Festival list (Seasonal Outlook section 4) */
+.festival-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.festival-card {
+  padding: 14px;
+  border-radius: var(--radius-md);
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-left: 3px solid #fb7185;
+}
+.festival-date {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-3);
+  font-weight: 700;
+}
+.festival-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-1);
+  margin: 2px 0 6px;
+}
+.festival-window {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-bottom: 4px;
+}
+.festival-uplift {
+  font-size: 12px;
+  color: var(--text-2);
+}
+.festival-uplift strong { color: #dc2626; font-family: var(--font-mono); }
+.festival-notes {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 6px;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+/* Settings page — festival form + table */
+.festival-form {
+  padding: 18px 20px;
+  border-radius: var(--radius-md);
+  background: var(--bg-1);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-card);
+}
+.festival-form h3 {
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 700;
+}
+.festival-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.field-full { grid-column: 1 / -1; }
+.field label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 8px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.festival-form-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+.festival-table {
+  /* container */
+}
+.data-table.festival-cols .data-thead,
+.data-table.festival-cols .data-row {
+  grid-template-columns:
+    minmax(110px, 0.9fr) minmax(120px, 1.1fr)
+    72px 72px 72px
+    minmax(90px, 0.7fr) minmax(180px, 1.4fr) 180px;
+}
+.data-row.is-inactive { opacity: 0.55; }
+.badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
+}
+.badge-on  { background: rgba(22,163,74,0.12);  color: var(--success); border-color: rgba(22,163,74,0.32); }
+.badge-off { background: rgba(15,23,42,0.05);   color: var(--text-3);   border-color: var(--border); }
+
+@media (max-width: 900px) {
+  .festival-grid { grid-template-columns: 1fr 1fr; }
+  .decomp-grid { grid-template-columns: 1fr; }
+}
+
 /* ---------- Data page: subtab switcher ---------- */
 .subtabs {
   display: grid;

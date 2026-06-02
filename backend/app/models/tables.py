@@ -123,6 +123,28 @@ class ForecastResult(Base):
     )
 
 
+# ---------- festivals ----------
+class Festival(Base):
+    """A calendar event (Eid, Diwali, Christmas, etc.) the user wants the
+    seasonal forecast to highlight + optionally treat as a known uplift.
+
+    `expected_uplift` is a multiplier on baseline demand. 1.0 = no lift,
+    1.5 = +50%, 2.0 = double. The seasonal endpoint uses
+    `[date - lead_days, date + tail_days]` as the affected window for
+    visual annotation.
+    """
+    __tablename__ = "festivals"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+    expected_uplift: Mapped[float] = mapped_column(Float, nullable=False, default=1.5)
+    lead_days: Mapped[int] = mapped_column(Integer, nullable=False, default=7)
+    tail_days: Mapped[int] = mapped_column(Integer, nullable=False, default=2)
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    notes: Mapped[str | None] = mapped_column(String, nullable=True)
+
+
 # ---------- reorder_decisions ----------
 class ReorderDecision(Base):
     __tablename__ = "reorder_decisions"
