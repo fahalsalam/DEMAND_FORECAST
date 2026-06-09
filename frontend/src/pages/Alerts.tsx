@@ -98,18 +98,8 @@ export function Alerts() {
     [filtered]
   );
 
-  const toggle = (s: ReorderStatus) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(s)) {
-        if (next.size === 1) return prev;          // never empty the set
-        next.delete(s);
-      } else {
-        next.add(s);
-      }
-      return next;
-    });
-  };
+  // Single-select: clicking a tab shows ONLY that status.
+  const selectTab = (s: ReorderStatus) => setSelected(new Set([s]));
 
   const allSelected = ALL_STATUSES.every((s) => selected.has(s));
   const setAll = () => setSelected(new Set(ALL_STATUSES));
@@ -142,7 +132,7 @@ export function Alerts() {
                   className={`filter-pill filter-pill-${s.toLowerCase()} ${
                     selected.has(s) ? "is-on" : ""
                   }`}
-                  onClick={() => toggle(s)}
+                  onClick={() => selectTab(s)}
                   type="button"
                 >
                   {STATUS_LABEL[s]}

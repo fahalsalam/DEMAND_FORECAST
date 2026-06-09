@@ -2824,6 +2824,11 @@ body {
 .filter-pill:hover:not(.is-on) {
   background: rgba(15, 23, 42,0.08);
   color: var(--text-1);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+.filter-pill.is-on {
+  cursor: default;
 }
 .filter-pill .filter-count {
   font-family: var(--font-mono);
