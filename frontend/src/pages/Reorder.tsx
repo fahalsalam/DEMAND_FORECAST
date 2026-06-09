@@ -86,6 +86,7 @@ export function Reorder() {
     }
   }, []);
 
+  // Initial load: use cached job_id, or fetch the latest from backend.
   useEffect(() => {
     (async () => {
       let jid = jobId;
@@ -103,6 +104,39 @@ export function Reorder() {
       void load(jid);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [load]);
+
+  // Auto-refresh when Dashboard runs a new forecast (storage event).
+  useEffect(() => {
+    const refresh = () => {
+      const newJid = loadLastJobId();
+      if (newJid && newJid !== jobId) {
+        setJobId(newJid);
+        void load(newJid);
+      }
+    };
+    window.addEventListener("storage", refresh);
+    return () => window.removeEventListener("storage", refresh);
+  }, [jobId, load]);
+
+  // Manual refresh — always re-fetches the latest job from the backend.
+  const handleRefresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const latest = await api.getLatestJob();
+      const jid = latest.job_id;
+      setJobId(jid);
+      try { localStorage.setItem(LAST_JOB_KEY, jid); } catch { /* ignore */ }
+      await load(jid);
+    } catch (err) {
+      setLoading(false);
+      setError(
+        err instanceof ApiError
+          ? `${err.status} — ${err.message}`
+          : err instanceof Error ? err.message : "Unknown error"
+      );
+    }
   }, [load]);
 
   useEffect(() => {
@@ -214,9 +248,21 @@ export function Reorder() {
       <header className="page-header">
         <div>
           <h1>Reorder</h1>
-          <p>Review the recommended order, adjust quantities, and export a purchase order grouped by supplier.</p>
+          <p>
+            Review the recommended order, adjust quantities, and export a purchase order grouped by supplier.
+            {jobId && (
+              <span className="page-job-chip"> · Job <code>{jobId.slice(4, 16)}</code></span>
+            )}
+          </p>
         </div>
         <div className="page-header-actions">
+          <button className="btn btn-ghost" onClick={handleRefresh} disabled={loading} title="Re-fetch from latest forecast">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="23 4 23 10 17 10" />
+              <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
+            </svg>
+            {loading ? "Loading…" : "Refresh"}
+          </button>
           <button className="btn btn-ghost" onClick={printPO} disabled={totals.lineCount === 0}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="6 9 6 2 18 2 18 9" />
