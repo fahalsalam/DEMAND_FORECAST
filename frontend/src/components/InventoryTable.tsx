@@ -3,7 +3,7 @@ import { api, ApiError } from "../api/client";
 import type { InventoryRow } from "../types";
 
 const fmtCurrency = (n: number) =>
-  new Intl.NumberFormat(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+  new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
 
 const fmtDate = (iso: string) => {
   try { return new Date(iso).toLocaleDateString(); } catch { return iso; }

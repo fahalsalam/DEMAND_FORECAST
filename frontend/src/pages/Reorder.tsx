@@ -6,16 +6,16 @@ import type { ReorderDecisionOut } from "../types";
 const LAST_JOB_KEY = "df:lastJobId";
 
 const fmtCurrency = (n: number) =>
-  new Intl.NumberFormat(undefined, {
+  new Intl.NumberFormat("en-IN", {
     style: "currency",
-    currency: "USD",
+    currency: "INR",
     maximumFractionDigits: 2,
   }).format(n);
 
 const fmtCurrency0 = (n: number) =>
-  new Intl.NumberFormat(undefined, {
+  new Intl.NumberFormat("en-IN", {
     style: "currency",
-    currency: "USD",
+    currency: "INR",
     maximumFractionDigits: 0,
   }).format(n);
 

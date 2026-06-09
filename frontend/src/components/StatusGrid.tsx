@@ -124,9 +124,9 @@ function SkuTile({ a }: { a: ReorderDecisionOut }) {
         <div className="sku-rec">
           Order <strong>{Math.round(a.recommended_order_qty)}</strong>
           <span className="muted">
-            {" "}≈ {new Intl.NumberFormat(undefined, {
+            {" "}≈ {new Intl.NumberFormat("en-IN", {
               style: "currency",
-              currency: "USD",
+              currency: "INR",
               maximumFractionDigits: 0,
             }).format(a.estimated_cost)}
           </span>

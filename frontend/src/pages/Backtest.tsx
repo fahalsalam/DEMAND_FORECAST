@@ -4,9 +4,9 @@ import { BacktestChart } from "../components/BacktestChart";
 import type { BacktestResult, SkuSummary } from "../types";
 
 const fmtCurrency = (n: number) =>
-  new Intl.NumberFormat(undefined, {
+  new Intl.NumberFormat("en-IN", {
     style: "currency",
-    currency: "USD",
+    currency: "INR",
     maximumFractionDigits: 0,
   }).format(n);
 
@@ -210,7 +210,7 @@ function Scorecards({ result }: { result: BacktestResult }) {
       baseline: fmtCurrency(result.baseline.total_holding_cost),
       system: fmtCurrency(result.system.total_holding_cost),
       delta: result.baseline.total_holding_cost - result.system.total_holding_cost,
-      unit: "$",
+      unit: "₹",
       lowerIsBetter: true,
     },
   ];

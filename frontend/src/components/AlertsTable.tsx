@@ -10,9 +10,9 @@ const fmt = (n: number, digits = 1) =>
   Number.isFinite(n) ? n.toFixed(digits) : "—";
 
 const fmtCurrency = (n: number) =>
-  new Intl.NumberFormat(undefined, {
+  new Intl.NumberFormat("en-IN", {
     style: "currency",
-    currency: "USD",
+    currency: "INR",
     maximumFractionDigits: 0,
   }).format(n);
 

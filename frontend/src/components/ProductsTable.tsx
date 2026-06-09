@@ -3,7 +3,7 @@ import { api, ApiError } from "../api/client";
 import type { ProductOut } from "../types";
 
 const fmtCurrency = (n: number) =>
-  new Intl.NumberFormat(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(n);
+  new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 }).format(n);
 
 interface Toast {
   kind: "ok" | "err";
