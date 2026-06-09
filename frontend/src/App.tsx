@@ -8,6 +8,7 @@ import { Dashboard } from "./pages/Dashboard";
 import { Data } from "./pages/Data";
 import { Forecasts } from "./pages/Forecasts";
 import { Inspector } from "./pages/Inspector";
+import { Landing } from "./pages/Landing";
 import { Login } from "./pages/Login";
 import { Reorder } from "./pages/Reorder";
 import { Seasonal } from "./pages/Seasonal";
@@ -33,6 +34,7 @@ function loadPage(): PageKey {
 export default function App() {
   const { user, signOut } = useAuth();
   const [page, setPage] = useState<PageKey>(loadPage);
+  const [showLogin, setShowLogin] = useState(false);
 
   useEffect(() => {
     try {
@@ -43,7 +45,8 @@ export default function App() {
   }, [page]);
 
   if (!user) {
-    return <Login />;
+    if (showLogin) return <Login />;
+    return <Landing onSignIn={() => setShowLogin(true)} />;
   }
 
   return (
