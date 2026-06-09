@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 
 interface Props {
@@ -8,6 +8,77 @@ interface Props {
 export function Landing({ onSignIn }: Props) {
   const { signIn, demoCreds } = useAuth();
   const [loading, setLoading] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
+
+  /* ── Load Google Fonts ── */
+  useEffect(() => {
+    if (!document.getElementById("lp-gfonts")) {
+      const pre1 = document.createElement("link");
+      pre1.id = "lp-gfonts";
+      pre1.rel = "preconnect";
+      pre1.href = "https://fonts.googleapis.com";
+      const pre2 = document.createElement("link");
+      pre2.rel = "preconnect";
+      pre2.href = "https://fonts.gstatic.com";
+      (pre2 as HTMLLinkElement).crossOrigin = "anonymous";
+      const fonts = document.createElement("link");
+      fonts.rel = "stylesheet";
+      fonts.href =
+        "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap";
+      document.head.append(pre1, pre2, fonts);
+    }
+  }, []);
+
+  /* ── Nav scroll shadow ── */
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    const onScroll = () =>
+      nav.classList.toggle("lp-nav-scrolled", window.scrollY > 20);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  /* ── Scroll reveal (IntersectionObserver) ── */
+  useEffect(() => {
+    const io = new IntersectionObserver(
+      (entries) =>
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            e.target.classList.add("lp-in");
+            io.unobserve(e.target);
+          }
+        }),
+      { threshold: 0.12, rootMargin: "0px 0px -36px 0px" }
+    );
+    document.querySelectorAll(".lp-reveal").forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, []);
+
+  /* ── Widget live value flicker ── */
+  useEffect(() => {
+    const rows = [
+      ["₹7,580", "₹7,842", "₹7,580"],
+      ["₹5,099", "₹5,099", "₹5,340"],
+      ["₹4,016", "₹3,980", "₹4,016"],
+      ["₹3,415", "₹3,415", "₹3,580"],
+    ];
+    let tick = 0;
+    const id = window.setInterval(() => {
+      tick = (tick + 1) % 3;
+      document
+        .querySelectorAll<HTMLElement>(".lp-w-val")
+        .forEach((el, i) => {
+          el.style.transition = "opacity 0.25s";
+          el.style.opacity = "0";
+          window.setTimeout(() => {
+            el.textContent = rows[i]?.[tick] ?? el.textContent;
+            el.style.opacity = "1";
+          }, 260);
+        });
+    }, 3800);
+    return () => window.clearInterval(id);
+  }, []);
 
   async function handleDemo() {
     setLoading(true);
@@ -15,397 +86,614 @@ export function Landing({ onSignIn }: Props) {
     setLoading(false);
   }
 
+  function scrollTo(id: string) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const y = el.getBoundingClientRect().top + window.scrollY - 72;
+    window.scrollTo({ top: y, behavior: "smooth" });
+  }
+
   return (
     <div className="lp-root">
 
-      {/* ── NAV ─────────────────────────────────── */}
-      <nav className="lp-nav">
+      {/* ═══ NAV ═══ */}
+      <nav className="lp-navbar" ref={navRef}>
         <div className="lp-nav-inner">
-          <div className="lp-logo">
-            <div className="lp-logo-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-                strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="3 17 9 11 13 15 21 7" />
-                <polyline points="14 7 21 7 21 14" />
+          <span className="lp-logo">
+            <div className="lp-logo-mark">
+              <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
+                <path
+                  d="M2 13 L5.5 8.5 L9 10.5 L13 4.5 L15 6.5"
+                  stroke="white"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </div>
-            <span className="lp-logo-name">Demand<strong>Forecast</strong></span>
-          </div>
-          <div className="lp-nav-right">
-            <a href="#how-it-works" className="lp-nav-anchor">How it works</a>
-            <a href="#under-the-hood" className="lp-nav-anchor">Under the hood</a>
-            <button className="lp-nav-demo" onClick={handleDemo} disabled={loading}>
-              {loading ? "Opening…" : "Open Demo →"}
-            </button>
-          </div>
+            Demand<strong>Forecast</strong>
+          </span>
+          <ul className="lp-nav-links">
+            <li>
+              <button
+                className="lp-nav-link-btn"
+                onClick={() => scrollTo("how-it-works")}
+                type="button"
+              >
+                How it works
+              </button>
+            </li>
+            <li>
+              <button
+                className="lp-nav-link-btn"
+                onClick={() => scrollTo("under-the-hood")}
+                type="button"
+              >
+                Under the hood
+              </button>
+            </li>
+            <li>
+              <button
+                className="lp-nav-link-btn"
+                onClick={() => scrollTo("whats-inside")}
+                type="button"
+              >
+                What's inside
+              </button>
+            </li>
+          </ul>
+          <button
+            className="lp-btn lp-btn-primary"
+            onClick={handleDemo}
+            disabled={loading}
+            type="button"
+          >
+            {loading ? "Opening…" : "Open Demo →"}
+          </button>
         </div>
       </nav>
 
-      {/* ── HERO ────────────────────────────────── */}
-      <section className="lp-hero">
-        <div className="lp-hero-inner">
+      {/* ═══ HERO ═══ */}
+      <div className="lp-hero-wrap">
+        <div className="lp-hero">
 
-          {/* Left — copy */}
+          {/* LEFT: copy */}
           <div className="lp-hero-copy">
-            <div className="lp-eyebrow">Demand Forecasting · Auto-Reorder System</div>
+            <div className="lp-hero-pill">
+              <span className="lp-live-dot" />
+              Demand Forecasting · Auto-Reorder System
+            </div>
             <h1 className="lp-h1">
               Stop guessing<br />
-              when to reorder.
+              <em>when to reorder.</em>
             </h1>
-            <p className="lp-hero-p">
-              Three AI models compete for every product. The one that predicts your sales
-              most accurately wins — then automatically calculates how much stock to order
-              and when, so you never run out before a festival or over-buy after one.
+            <p className="lp-hero-sub">
+              Three AI models compete for every product. The one that predicts
+              your sales most accurately wins — then automatically calculates
+              how much stock to order and when.
             </p>
-            <div className="lp-hero-actions">
-              <button className="lp-btn-demo" onClick={handleDemo} disabled={loading}>
-                {loading
-                  ? <><span className="lp-loader" /> Opening demo…</>
-                  : <>Try the live demo — no setup needed</>
-                }
+            <div className="lp-hero-ctas">
+              <button
+                className="lp-btn lp-btn-primary-lg"
+                onClick={handleDemo}
+                disabled={loading}
+                type="button"
+              >
+                {loading ? "Opening…" : "Try the live demo — no setup needed"}
               </button>
-              <button className="lp-btn-login" onClick={onSignIn}>Sign in</button>
+              <button
+                className="lp-btn lp-btn-ghost-lg"
+                onClick={onSignIn}
+                type="button"
+              >
+                Sign in
+              </button>
             </div>
             <p className="lp-hero-note">
-              Pre-loaded with 35 products · seasonal patterns · Eid, Diwali &amp; Christmas spikes
+              Pre-loaded with 35 products · seasonal patterns · Eid, Diwali &amp;
+              Christmas spikes
             </p>
           </div>
 
-          {/* Right — live snapshot card */}
-          <div className="lp-snapshot">
-            <div className="lp-snapshot-header">
-              <span className="lp-snapshot-title">Latest forecast run</span>
-              <span className="lp-snapshot-badge">● Live</span>
-            </div>
-
-            <div className="lp-snapshot-kpis">
-              <div className="lp-kpi">
-                <span className="lp-kpi-n danger">9</span>
-                <span className="lp-kpi-l">need reorder</span>
-              </div>
-              <div className="lp-kpi">
-                <span className="lp-kpi-n">25</span>
-                <span className="lp-kpi-l">healthy</span>
-              </div>
-              <div className="lp-kpi">
-                <span className="lp-kpi-n accent">₹33,876</span>
-                <span className="lp-kpi-l">suggested PO</span>
+          {/* RIGHT: dashboard widget */}
+          <div className="lp-widget">
+            <div className="lp-widget-top">
+              <span className="lp-widget-top-label">Latest forecast run</span>
+              <div className="lp-badge-live">
+                <span className="lp-badge-dot" />
+                Live
               </div>
             </div>
 
-            <div className="lp-snapshot-divider" />
+            <div className="lp-widget-kpis">
+              <div className="lp-kpi-cell">
+                <div className="lp-kv danger">9</div>
+                <div className="lp-kl">Need Reorder</div>
+              </div>
+              <div className="lp-kpi-cell">
+                <div className="lp-kv neutral">25</div>
+                <div className="lp-kl">Healthy</div>
+              </div>
+              <div className="lp-kpi-cell">
+                <div className="lp-kv money">₹33,876</div>
+                <div className="lp-kl">Suggested PO</div>
+              </div>
+            </div>
 
-            {/* Reorder rows */}
-            <div className="lp-sku-list">
+            {/* Sparkline chart */}
+            <div className="lp-widget-chart">
+              <div className="lp-chart-meta">
+                <span className="lp-chart-label">
+                  Premium Date Box · demand forecast
+                </span>
+                <div className="lp-chart-legend">
+                  <span>
+                    <i className="lp-leg-solid" />
+                    actual
+                  </span>
+                  <span>
+                    <i className="lp-leg-dashed" />
+                    forecast
+                  </span>
+                </div>
+              </div>
+              <svg
+                width="100%"
+                height="76"
+                viewBox="0 0 440 76"
+                preserveAspectRatio="none"
+              >
+                {/* Confidence band */}
+                <path
+                  d="M200,12 C220,9 240,7 260,8 C280,9 300,14 320,20 C340,26 360,24 380,22 C400,20 420,18 440,17
+                     L440,34 C420,34 400,36 380,38 C360,40 340,46 320,42 C300,38 280,32 260,28
+                     C240,24 220,24 200,26 Z"
+                  fill="rgba(99,102,241,0.1)"
+                />
+                {/* Historical solid line */}
+                <path
+                  d="M0,60 C20,58 40,54 60,48 C80,42 100,34 120,27 C140,20 160,15 180,13 C195,11 200,12 200,12"
+                  stroke="#818cf8"
+                  strokeWidth="2"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                {/* Forecast dashed line */}
+                <path
+                  d="M200,12 C220,9 240,7 260,8 C280,9 300,14 320,20 C340,26 360,24 380,22 C400,20 420,18 440,17"
+                  stroke="#818cf8"
+                  strokeWidth="2"
+                  fill="none"
+                  strokeDasharray="5,4"
+                  strokeLinecap="round"
+                  opacity="0.7"
+                />
+                {/* Now marker */}
+                <line
+                  x1="200" y1="0" x2="200" y2="76"
+                  stroke="rgba(99,102,241,0.3)"
+                  strokeWidth="1"
+                />
+                {/* Festival marker (Eid) */}
+                <line
+                  x1="270" y1="0" x2="270" y2="76"
+                  stroke="rgba(245,158,11,0.28)"
+                  strokeWidth="1"
+                  strokeDasharray="3,3"
+                />
+                <text
+                  x="274" y="11"
+                  fontSize="9"
+                  fill="rgba(245,158,11,0.65)"
+                  fontFamily="'JetBrains Mono',monospace"
+                  letterSpacing="0.02em"
+                >
+                  Eid
+                </text>
+                {/* Dot at "now" */}
+                <circle cx="200" cy="12" r="4.5" fill="#6366f1" />
+                <circle cx="200" cy="12" r="9" fill="rgba(99,102,241,0.18)" />
+              </svg>
+            </div>
+
+            <div className="lp-widget-rows">
               {[
-                { sku:"SKU-019",  name:"Household Item 2",    days:9,  cost:"₹7,580", urgent:true },
-                { sku:"EID-SWEETS",name:"Premium Date Box",   days:7,  cost:"₹5,099", urgent:true },
-                { sku:"SKU-007",  name:"Snack Item 1",        days:7,  cost:"₹4,016", urgent:true },
-                { sku:"LEMONADE", name:"Iced Lemonade 500ml", days:5,  cost:"₹3,415", urgent:true },
-              ].map(r => (
-                <div key={r.sku} className="lp-sku-row">
-                  <span className={`lp-sku-dot ${r.urgent ? "urgent" : ""}`} />
-                  <span className="lp-sku-name">{r.name}</span>
-                  <span className="lp-sku-lead">{r.days}d lead</span>
-                  <span className="lp-sku-cost">{r.cost}</span>
+                { name: "Household Item 2",    lead: "9d lead", val: "₹7,580" },
+                { name: "Premium Date Box",    lead: "7d lead", val: "₹5,099" },
+                { name: "Snack Item 1",        lead: "7d lead", val: "₹4,016" },
+                { name: "Iced Lemonade 500ml", lead: "5d lead", val: "₹3,415" },
+              ].map((r) => (
+                <div className="lp-w-row" key={r.name}>
+                  <div className="lp-w-name">
+                    <span className="lp-w-dot" />
+                    {r.name}
+                  </div>
+                  <span className="lp-w-lead">{r.lead}</span>
+                  <span className="lp-w-val">{r.val}</span>
                 </div>
               ))}
             </div>
+            <div className="lp-widget-foot">
+              Updated 2h ago · models retrain daily · 35 products on demo
+            </div>
+          </div>
 
-            <div className="lp-snapshot-footer">
-              Model contest: ARIMA vs Prophet vs LightGBM · best MAPE wins per SKU
+        </div>
+      </div>
+
+      {/* ═══ STATS BAR ═══ */}
+      <div className="lp-stats-bar">
+        <div className="lp-stats-grid">
+          <div className="lp-stat-cell">
+            <div className="lp-stat-num">
+              <span className="lp-accent">3×</span> models
+            </div>
+            <div className="lp-stat-desc">
+              Auto-ARIMA, Prophet, LightGBM — best wins per SKU
+            </div>
+          </div>
+          <div className="lp-stat-cell">
+            <div className="lp-stat-num">
+              28<span className="lp-accent">d</span> holdout
+            </div>
+            <div className="lp-stat-desc">
+              MAPE-tested on unseen data before any recommendation
+            </div>
+          </div>
+          <div className="lp-stat-cell">
+            <div className="lp-stat-num">
+              95<span className="lp-accent">%</span> service
+            </div>
+            <div className="lp-stat-desc">
+              Z = 1.645 default — safety stock calibrated to confidence
+            </div>
+          </div>
+          <div className="lp-stat-cell">
+            <div className="lp-stat-num">
+              35 <span className="lp-accent">SKUs</span>
+            </div>
+            <div className="lp-stat-desc">
+              Festival-aware demo with Eid, Diwali &amp; Christmas spikes
             </div>
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* ── THE PROBLEM ──────────────────────────── */}
-      <section className="lp-problem">
-        <div className="lp-section-wrap">
+      {/* ═══ PROBLEM ═══ */}
+      <section className="lp-problem-section" id="problem">
+        <div className="lp-wrap">
+          <div className="lp-label">The Problem It Solves</div>
+          <h2 className="lp-h2">
+            Your Eid stock ran out<br />
+            3 days before the festival.
+          </h2>
           <div className="lp-problem-grid">
-            <div className="lp-problem-copy">
-              <div className="lp-eyebrow muted">The problem it solves</div>
-              <h2 className="lp-h2">
-                Your Eid stock ran out<br />3 days before the festival.
-              </h2>
-              <p className="lp-body-p">
-                Traditional inventory systems use fixed reorder points set months ago.
-                They don't know that Eid demand spikes 3× for two weeks, or that summer
-                lemonade sells 5× faster in June than March.
+            <div className="lp-problem-text">
+              <p>
+                Traditional inventory systems use fixed reorder points set months
+                ago. They don't know that Eid demand spikes 3× for two weeks, or
+                that summer lemonade sells 5× faster in June than March.
               </p>
-              <p className="lp-body-p">
-                This system learns those patterns from your own sales history. It adjusts
-                every SKU's reorder point based on the upcoming season, and explains
-                exactly why it made each recommendation.
+              <p>
+                This system learns those patterns from your own sales history. It
+                adjusts every SKU's reorder point based on the upcoming season,
+                and explains exactly why it made each recommendation.
               </p>
             </div>
-            <div className="lp-problem-cards">
-              <div className="lp-pcard bad">
-                <div className="lp-pcard-label">Before</div>
-                <div className="lp-pcard-item">
-                  <span className="lp-x">✕</span> Fixed reorder point: 100 units
-                </div>
-                <div className="lp-pcard-item">
-                  <span className="lp-x">✕</span> Ran out 3 days pre-Eid
-                </div>
-                <div className="lp-pcard-item">
-                  <span className="lp-x">✕</span> Buyer guessed the order qty
-                </div>
-                <div className="lp-pcard-item">
-                  <span className="lp-x">✕</span> Lost ₹5,000+ in sales
-                </div>
+            <div className="lp-compare-stack">
+              <div className="lp-compare-card bad lp-reveal">
+                <div className="lp-compare-label">Before</div>
+                <ul className="lp-compare-list">
+                  <li><i className="lp-ico">✕</i>Fixed reorder point: 100 units</li>
+                  <li><i className="lp-ico">✕</i>Ran out 3 days pre-Eid</li>
+                  <li><i className="lp-ico">✕</i>Buyer guessed the order qty</li>
+                  <li><i className="lp-ico">✕</i>Lost ₹5,000+ in sales</li>
+                </ul>
               </div>
-              <div className="lp-pcard good">
-                <div className="lp-pcard-label">After</div>
-                <div className="lp-pcard-item">
-                  <span className="lp-check">✓</span> Dynamic ROP: 65 units (Eid-aware)
-                </div>
-                <div className="lp-pcard-item">
-                  <span className="lp-check">✓</span> Reorder triggered 7 days early
-                </div>
-                <div className="lp-pcard-item">
-                  <span className="lp-check">✓</span> EOQ-sized order: 537 units
-                </div>
-                <div className="lp-pcard-item">
-                  <span className="lp-check">✓</span> Full stock through the festival
-                </div>
+              <div className="lp-compare-card good lp-reveal" data-d="1">
+                <div className="lp-compare-label">After</div>
+                <ul className="lp-compare-list">
+                  <li><i className="lp-ico">✓</i>Dynamic ROP: 65 units (Eid-aware)</li>
+                  <li><i className="lp-ico">✓</i>Reorder triggered 7 days early</li>
+                  <li><i className="lp-ico">✓</i>EOQ-sized order: 537 units</li>
+                  <li><i className="lp-ico">✓</i>Full stock through the festival</li>
+                </ul>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── HOW IT WORKS ─────────────────────────── */}
-      <section className="lp-how" id="how-it-works">
-        <div className="lp-section-wrap">
-          <div className="lp-eyebrow">How it works</div>
-          <h2 className="lp-h2">From sales data to purchase order in one run</h2>
-
-          <div className="lp-flow">
-            {[
-              {
-                n: "01",
-                title: "Upload your sales history",
-                body: "Drop in a CSV of daily sales — product, date, quantity. Or use the 35-product demo dataset that already has seasonal spikes, Eid demand, and summer patterns baked in.",
-                tag: "Data layer",
-              },
-              {
-                n: "02",
-                title: "Three models race for each SKU",
-                body: "Auto-ARIMA, Prophet, and LightGBM each fit a forecast on your history. The last 28 days are held out as a test set. The model with the lowest error (MAPE) wins that SKU.",
-                tag: "Forecast engine",
-              },
-              {
-                n: "03",
-                title: "Uncertainty sizes your safety stock",
-                body: "The winning model's 95% prediction interval determines the safety buffer — wider uncertainty = more safety stock. The reorder point = lead-time demand + safety stock.",
-                tag: "Inventory math",
-              },
-              {
-                n: "04",
-                title: "At-risk SKUs build your purchase order",
-                body: "Any product below its reorder point appears in the Reorder page, grouped by supplier. Adjust quantities, uncheck what you don't want, export to CSV — done.",
-                tag: "Auto PO builder",
-              },
-            ].map(s => (
-              <div key={s.n} className="lp-flow-step">
-                <div className="lp-flow-n">{s.n}</div>
-                <div className="lp-flow-body">
-                  <div className="lp-flow-tag">{s.tag}</div>
-                  <h3 className="lp-flow-title">{s.title}</h3>
-                  <p className="lp-flow-p">{s.body}</p>
-                </div>
-              </div>
-            ))}
+      {/* ═══ HOW IT WORKS ═══ */}
+      <section className="lp-how-section" id="how-it-works">
+        <div className="lp-wrap">
+          <div className="lp-how-header">
+            <div className="lp-label">How It Works</div>
+            <h2 className="lp-h2">
+              From sales data to purchase order in one run
+            </h2>
           </div>
-        </div>
-      </section>
-
-      {/* ── UNDER THE HOOD ───────────────────────── */}
-      <section className="lp-hood" id="under-the-hood">
-        <div className="lp-section-wrap">
-          <div className="lp-eyebrow">Under the hood</div>
-          <h2 className="lp-h2">Built for an academic evaluation — transparent by design</h2>
-          <p className="lp-hood-sub">
-            Every number is traceable. The Inspector page shows exactly which model won,
-            what its MAPE was, and how safety stock was calculated for every single SKU.
-          </p>
-
-          <div className="lp-hood-grid">
-            <div className="lp-hood-card">
-              <h3>Forecast models</h3>
-              <div className="lp-hood-items">
-                <div className="lp-hood-item">
-                  <span className="lp-hood-label">Auto-ARIMA</span>
-                  <span className="lp-hood-val">pmdarima · stepwise p,d,q search</span>
-                </div>
-                <div className="lp-hood-item">
-                  <span className="lp-hood-label">Prophet</span>
-                  <span className="lp-hood-val">trend + weekly + yearly + festival regressors</span>
-                </div>
-                <div className="lp-hood-item">
-                  <span className="lp-hood-label">LightGBM</span>
-                  <span className="lp-hood-val">lag features, rolling stats, day-of-week</span>
-                </div>
-                <div className="lp-hood-item">
-                  <span className="lp-hood-label">Winner selection</span>
-                  <span className="lp-hood-val">28-day holdout MAPE, per SKU</span>
-                </div>
+          <div className="lp-steps-grid">
+            <div className="lp-step-card lp-reveal">
+              <div className="lp-step-num">01</div>
+              <div>
+                <div className="lp-step-tag">Data Layer</div>
+                <h3>Upload your sales history</h3>
+                <p>
+                  Drop in a CSV of daily sales — product, date, quantity. Or use
+                  the 35-product demo dataset that already has seasonal spikes,
+                  Eid demand, and summer patterns baked in.
+                </p>
               </div>
             </div>
-
-            <div className="lp-hood-card">
-              <h3>Inventory formulas</h3>
-              <div className="lp-hood-items">
-                <div className="lp-hood-item">
-                  <span className="lp-hood-label">Safety stock</span>
-                  <span className="lp-hood-val">Z(SL) × σ_demand × √lead_time</span>
-                </div>
-                <div className="lp-hood-item">
-                  <span className="lp-hood-label">Reorder point</span>
-                  <span className="lp-hood-val">avg_daily × lead_time + safety_stock</span>
-                </div>
-                <div className="lp-hood-item">
-                  <span className="lp-hood-label">Order qty (EOQ)</span>
-                  <span className="lp-hood-val">√(2 × annual_demand × order_cost / holding_cost)</span>
-                </div>
-                <div className="lp-hood-item">
-                  <span className="lp-hood-label">Service level</span>
-                  <span className="lp-hood-val">95% default → Z = 1.645</span>
-                </div>
+            <div className="lp-step-card lp-reveal" data-d="1">
+              <div className="lp-step-num">02</div>
+              <div>
+                <div className="lp-step-tag">Forecast Engine</div>
+                <h3>Three models race for each SKU</h3>
+                <p>
+                  Auto-ARIMA, Prophet, and LightGBM each fit a forecast on your
+                  history. The last 28 days are held out as a test set. The model
+                  with the lowest error (MAPE) wins that SKU.
+                </p>
               </div>
             </div>
-
-            <div className="lp-hood-card">
-              <h3>Tech stack</h3>
-              <div className="lp-hood-items">
-                <div className="lp-hood-item">
-                  <span className="lp-hood-label">Backend</span>
-                  <span className="lp-hood-val">Python 3.11 · FastAPI · SQLite · SQLAlchemy</span>
-                </div>
-                <div className="lp-hood-item">
-                  <span className="lp-hood-label">ML stack</span>
-                  <span className="lp-hood-val">pmdarima · Prophet 1.1.6 · LightGBM 4.5</span>
-                </div>
-                <div className="lp-hood-item">
-                  <span className="lp-hood-label">Frontend</span>
-                  <span className="lp-hood-val">React 18 · TypeScript · Vite · Recharts</span>
-                </div>
-                <div className="lp-hood-item">
-                  <span className="lp-hood-label">Architecture</span>
-                  <span className="lp-hood-val">core/ has zero FastAPI imports — pure Python</span>
-                </div>
+            <div className="lp-step-card lp-reveal" data-d="2">
+              <div className="lp-step-num">03</div>
+              <div>
+                <div className="lp-step-tag">Inventory Math</div>
+                <h3>Uncertainty sizes your safety stock</h3>
+                <p>
+                  The winning model's 95% prediction interval determines the
+                  safety buffer — wider uncertainty = more safety stock. The
+                  reorder point = lead-time demand + safety stock.
+                </p>
+              </div>
+            </div>
+            <div className="lp-step-card lp-reveal" data-d="3">
+              <div className="lp-step-num">04</div>
+              <div>
+                <div className="lp-step-tag">Auto PO Builder</div>
+                <h3>At-risk SKUs build your purchase order</h3>
+                <p>
+                  Any product below its reorder point appears in the Reorder
+                  page, grouped by supplier. Adjust quantities, uncheck what you
+                  don't want, export to CSV — done.
+                </p>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── WHAT YOU GET ─────────────────────────── */}
-      <section className="lp-pages">
-        <div className="lp-section-wrap">
-          <div className="lp-eyebrow">What's inside</div>
-          <h2 className="lp-h2">Eight pages, one complete workflow</h2>
-          <div className="lp-pages-grid">
-            {PAGES.map(p => (
-              <div key={p.name} className="lp-page-card">
-                <div className="lp-page-icon">{p.icon}</div>
-                <div className="lp-page-info">
-                  <span className="lp-page-name">{p.name}</span>
-                  <span className="lp-page-desc">{p.desc}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── CTA ─────────────────────────────────── */}
-      <section className="lp-cta">
-        <div className="lp-section-wrap">
-          <div className="lp-cta-box">
-            <h2 className="lp-cta-h2">See the actual system running</h2>
-            <p className="lp-cta-p">
-              The demo is pre-seeded with 35 SKUs, 23,000+ sales rows, and
-              seasonal products — Eid sweets, summer drinks, Diwali lights.
-              A forecast has already been run. Just open it and explore.
+      {/* ═══ UNDER THE HOOD ═══ */}
+      <section className="lp-hood-section" id="under-the-hood">
+        <div className="lp-wrap">
+          <div className="lp-hood-header">
+            <div className="lp-label">Under the Hood</div>
+            <h2 className="lp-h2">
+              Built for an academic evaluation —<br />
+              transparent by design
+            </h2>
+            <p className="lp-section-sub">
+              Every number is traceable. The Inspector page shows exactly which
+              model won, what its MAPE was, and how safety stock was calculated
+              for every single SKU.
             </p>
-            <div className="lp-cta-actions">
-              <button className="lp-btn-demo lp-btn-demo-lg" onClick={handleDemo} disabled={loading}>
-                {loading ? "Opening…" : "Open live demo"}
-              </button>
-              <button className="lp-btn-login" onClick={onSignIn}>
-                Sign in with credentials
-              </button>
+          </div>
+          <div className="lp-hood-grid">
+            <div className="lp-hood-card lp-reveal">
+              <div className="lp-hood-card-label">Forecast Models</div>
+              <div className="lp-hood-row">
+                <div className="lp-hood-row-name">Auto-ARIMA</div>
+                <div className="lp-hood-row-detail">pmdarima · stepwise p,d,q search</div>
+              </div>
+              <div className="lp-hood-row">
+                <div className="lp-hood-row-name">Prophet</div>
+                <div className="lp-hood-row-detail">trend + weekly + yearly + festival regressors</div>
+              </div>
+              <div className="lp-hood-row">
+                <div className="lp-hood-row-name">LightGBM</div>
+                <div className="lp-hood-row-detail">lag features, rolling stats, day-of-week</div>
+              </div>
+              <div className="lp-hood-row">
+                <div className="lp-hood-row-name">Winner selection</div>
+                <div className="lp-hood-row-detail">28-day holdout MAPE, per SKU</div>
+              </div>
             </div>
-            <div className="lp-cta-creds">
-              Demo login: <code>buyer@demo.com</code> / <code>demo1234</code>
+            <div className="lp-hood-card lp-reveal" data-d="1">
+              <div className="lp-hood-card-label">Inventory Formulas</div>
+              <div className="lp-hood-row">
+                <div className="lp-hood-row-name">Safety stock</div>
+                <div className="lp-hood-row-detail">Z(SL) × σ_demand × √lead_time</div>
+              </div>
+              <div className="lp-hood-row">
+                <div className="lp-hood-row-name">Reorder point</div>
+                <div className="lp-hood-row-detail">avg_daily × lead_time + safety_stock</div>
+              </div>
+              <div className="lp-hood-row">
+                <div className="lp-hood-row-name">Order qty (EOQ)</div>
+                <div className="lp-hood-row-detail">√(2 × annual_demand × order_cost / holding_cost)</div>
+              </div>
+              <div className="lp-hood-row">
+                <div className="lp-hood-row-name">Service level</div>
+                <div className="lp-hood-row-detail">95% default → Z = 1.645</div>
+              </div>
+            </div>
+            <div className="lp-hood-card lp-reveal" data-d="2">
+              <div className="lp-hood-card-label">Tech Stack</div>
+              <div className="lp-hood-row">
+                <div className="lp-hood-row-name">Backend</div>
+                <div className="lp-hood-row-detail">Python 3.11 · FastAPI · SQLite · SQLAlchemy</div>
+              </div>
+              <div className="lp-hood-row">
+                <div className="lp-hood-row-name">ML stack</div>
+                <div className="lp-hood-row-detail">pmdarima · Prophet 1.1.6 · LightGBM 4.5</div>
+              </div>
+              <div className="lp-hood-row">
+                <div className="lp-hood-row-name">Frontend</div>
+                <div className="lp-hood-row-detail">React 18 · TypeScript · Vite · Recharts</div>
+              </div>
+              <div className="lp-hood-row">
+                <div className="lp-hood-row-name">Architecture</div>
+                <div className="lp-hood-row-detail">core/ has zero FastAPI imports — pure Python</div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── FOOTER ──────────────────────────────── */}
+      {/* ═══ WHAT'S INSIDE ═══ */}
+      <section className="lp-inside-section" id="whats-inside">
+        <div className="lp-wrap">
+          <div className="lp-label">What's Inside</div>
+          <h2 className="lp-h2">Eight pages, one complete workflow</h2>
+          <div className="lp-pages-grid2">
+
+            <div className="lp-page2-card lp-reveal">
+              <div className="lp-page2-icon">
+                <svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="#818cf8" strokeWidth="1.5" strokeLinecap="round">
+                  <rect x="2" y="2" width="5.5" height="5.5" rx="1.5" /><rect x="9.5" y="2" width="5.5" height="5.5" rx="1.5" />
+                  <rect x="2" y="9.5" width="5.5" height="5.5" rx="1.5" /><rect x="9.5" y="9.5" width="5.5" height="5.5" rx="1.5" />
+                </svg>
+              </div>
+              <h4>Dashboard</h4>
+              <p>Run forecast, view KPIs, see overall inventory health at a glance</p>
+            </div>
+
+            <div className="lp-page2-card lp-reveal" data-d="1">
+              <div className="lp-page2-icon">
+                <svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="#818cf8" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M2 13 L5 9 L9 11 L13 4.5 L15 6.5" />
+                </svg>
+              </div>
+              <h4>Forecasts</h4>
+              <p>Per-SKU chart with actual vs forecast band and model confidence</p>
+            </div>
+
+            <div className="lp-page2-card lp-reveal" data-d="2">
+              <div className="lp-page2-icon">
+                <svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="#818cf8" strokeWidth="1.5" strokeLinecap="round">
+                  <rect x="2" y="3" width="13" height="11" rx="2" /><path d="M6 3V2M11 3V2M2 7h13" />
+                </svg>
+              </div>
+              <h4>Seasonal Outlook</h4>
+              <p>12-month demand outlook with festival overlays and trend decomposition</p>
+            </div>
+
+            <div className="lp-page2-card lp-reveal" data-d="3">
+              <div className="lp-page2-icon">
+                <svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="#818cf8" strokeWidth="1.5" strokeLinecap="round">
+                  <path d="M8.5 2v2.5M8.5 12.5V15M2 8.5h2.5M12.5 8.5H15" />
+                  <circle cx="8.5" cy="8.5" r="3" />
+                </svg>
+              </div>
+              <h4>Alerts</h4>
+              <p>Every at-risk SKU with reorder point, stockout explanation and cost impact</p>
+            </div>
+
+            <div className="lp-page2-card lp-reveal">
+              <div className="lp-page2-icon">
+                <svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="#818cf8" strokeWidth="1.5" strokeLinecap="round">
+                  <path d="M3 5.5h11M3 8.5h7M3 11.5h9" />
+                </svg>
+              </div>
+              <h4>Reorder</h4>
+              <p>Products grouped by supplier, quantities editable, one-click CSV export</p>
+            </div>
+
+            <div className="lp-page2-card lp-reveal" data-d="1">
+              <div className="lp-page2-icon">
+                <svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="#818cf8" strokeWidth="1.5" strokeLinecap="round">
+                  <circle cx="8.5" cy="8.5" r="6.5" /><path d="M8.5 5v3.5l2.5 1.5" />
+                </svg>
+              </div>
+              <h4>Inspector</h4>
+              <p>Per-SKU breakdown: winning model, MAPE score, full safety stock trace</p>
+            </div>
+
+            <div className="lp-page2-card lp-reveal" data-d="2">
+              <div className="lp-page2-icon">
+                <svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="#818cf8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M8.5 2L15 8.5l-6.5 6.5L2 8.5 8.5 2z" />
+                </svg>
+              </div>
+              <h4>Purchase Orders</h4>
+              <p>Auto-generated POs with total cost, lead time and supplier grouping</p>
+            </div>
+
+            <div className="lp-page2-card lp-reveal" data-d="3">
+              <div className="lp-page2-icon">
+                <svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="#818cf8" strokeWidth="1.5" strokeLinecap="round">
+                  <circle cx="8.5" cy="5" r="2" /><circle cx="8.5" cy="12" r="2" />
+                  <path d="M8.5 7v3M5 5H3M14 5h-2M5 12H3M14 12h-2" />
+                </svg>
+              </div>
+              <h4>Settings</h4>
+              <p>Service level, lead times per supplier, festival calendar configuration</p>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ CTA ═══ */}
+      <section className="lp-cta-section">
+        <div className="lp-cta-inner">
+          <div className="lp-label" style={{ justifyContent: "center", display: "flex" }}>
+            Get Started
+          </div>
+          <h2 className="lp-h2">See it work on real data</h2>
+          <p className="lp-cta-p">
+            No setup, no account needed. The demo runs live with 35 products,
+            seasonal patterns, and festival spikes already loaded.
+          </p>
+          <div className="lp-cta-btns">
+            <button
+              className="lp-btn lp-btn-primary-lg"
+              onClick={handleDemo}
+              disabled={loading}
+              type="button"
+            >
+              {loading ? "Opening…" : "Open the live demo →"}
+            </button>
+            <a
+              className="lp-btn lp-btn-ghost-lg"
+              href="https://github.com/fahalsalam/DEMAND_FORECAST"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              View on GitHub
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ FOOTER ═══ */}
       <footer className="lp-footer">
-        <div className="lp-footer-inner">
-          <div className="lp-footer-brand">
-            <div className="lp-logo-icon sm">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-                strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="3 17 9 11 13 15 21 7" />
-                <polyline points="14 7 21 7 21 14" />
+        <div className="lp-wrap lp-footer-inner">
+          <span className="lp-logo">
+            <div className="lp-logo-mark">
+              <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
+                <path
+                  d="M2 13 L5.5 8.5 L9 10.5 L13 4.5 L15 6.5"
+                  stroke="white"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </div>
-            <span>DemandForecast</span>
+            Demand<strong>Forecast</strong>
+          </span>
+          <div className="lp-footer-stack">
+            Python 3.11 · FastAPI · SQLite · React 18 · TypeScript · pmdarima ·
+            Prophet · LightGBM
           </div>
-          <span className="lp-footer-copy">Demand Forecasting &amp; Automatic Inventory Reorder System · Academic Project</span>
         </div>
       </footer>
+
     </div>
   );
 }
-
-/* ── App pages data ─────────────────────────────────────────────── */
-
-const PAGES = [
-  {
-    name: "Dashboard",
-    desc: "Run forecast, view KPIs, see overall inventory health at a glance",
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg>,
-  },
-  {
-    name: "Forecasts",
-    desc: "Per-SKU chart with actual vs forecast band and model confidence",
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg>,
-  },
-  {
-    name: "Seasonal Outlook",
-    desc: "12-month demand outlook with festival overlays and trend decomposition",
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
-  },
-  {
-    name: "Alerts",
-    desc: "Every at-risk SKU with reorder point, stockout explanation and cost",
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>,
-  },
-  {
-    name: "Reorder",
-    desc: "Editable purchase order grouped by supplier — export to CSV or print",
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>,
-  },
-  {
-    name: "Inspector",
-    desc: "See exactly which model won each SKU and why, with MAPE scores",
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
-  },
-  {
-    name: "Data",
-    desc: "Browse products, inventory and sales. Upload your own CSV data.",
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 11v6c0 1.66 4.03 3 9 3s9-1.34 9-3v-6"/></svg>,
-  },
-  {
-    name: "Settings",
-    desc: "Configure festivals — set demand uplift multiplier and date windows",
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.6 9a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9"/></svg>,
-  },
-];
