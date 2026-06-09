@@ -137,6 +137,7 @@ export interface ReorderDecisionOut {
   unit_cost: number;
   estimated_cost: number;
   lead_time_days: number;
+  supplier?: string | null;
 }
 
 // ---------- backtest -------------------------------------------------------

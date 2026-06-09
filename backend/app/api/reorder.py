@@ -62,6 +62,7 @@ def list_alerts(
                 unit_cost=product.unit_cost,
                 estimated_cost=est_cost,
                 lead_time_days=product.lead_time_days,
+                supplier=product.supplier,
             )
         )
     # Surface stockout risks first.

@@ -9,6 +9,7 @@ import { Data } from "./pages/Data";
 import { Forecasts } from "./pages/Forecasts";
 import { Inspector } from "./pages/Inspector";
 import { Login } from "./pages/Login";
+import { Reorder } from "./pages/Reorder";
 import { Seasonal } from "./pages/Seasonal";
 import { Settings } from "./pages/Settings";
 
@@ -17,7 +18,7 @@ const NAV_KEY = "df:activePage";
 // previous session fall back to dashboard instead of landing on a page that
 // has no sidebar entry. The Backtest page itself still exists in code.
 const VALID_PAGES: PageKey[] = [
-  "dashboard", "forecasts", "alerts", "data", "inspector",
+  "dashboard", "forecasts", "alerts", "reorder", "data", "inspector",
   "seasonal", "settings",
 ];
 
@@ -60,6 +61,7 @@ export default function App() {
         {page === "backtest" && <Backtest />}
         {page === "data" && <Data />}
         {page === "inspector" && <Inspector />}
+        {page === "reorder" && <Reorder />}
         {page === "seasonal" && <Seasonal />}
         {page === "settings" && <Settings />}
       </div>

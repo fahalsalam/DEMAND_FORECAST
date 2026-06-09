@@ -2,6 +2,7 @@ export type PageKey =
   | "dashboard"
   | "forecasts"
   | "alerts"
+  | "reorder"
   | "backtest"
   | "data"
   | "inspector"

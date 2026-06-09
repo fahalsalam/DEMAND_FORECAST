@@ -90,6 +90,7 @@ class ReorderDecisionOut(BaseModel):
     unit_cost: float
     estimated_cost: float            # recommended_order_qty * unit_cost
     lead_time_days: int
+    supplier: str | None = None      # for grouping a purchase order by supplier
 
 
 # ---------- /backtest/{sku} --------------------------------------------------
