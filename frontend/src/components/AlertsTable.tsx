@@ -27,13 +27,7 @@ export function AlertsTable({ alerts }: Props) {
       return next;
     });
 
-  if (alerts.length === 0) {
-    return (
-      <div className="empty-callout" style={{ maxWidth: 640, margin: "0 auto" }}>
-        No SKUs match the current filter. Try toggling more statuses above.
-      </div>
-    );
-  }
+  if (alerts.length === 0) return null;
 
   return (
     <div className="alerts-table" role="table">

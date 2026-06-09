@@ -178,7 +178,46 @@ export function Alerts() {
             <div className="run-error" style={{ marginTop: 16 }}>{error}</div>
           )}
 
-          {!loading && !error && <AlertsTable alerts={filtered} />}
+          {!loading && !error && filtered.length === 0 && (
+            <div className="alerts-empty">
+              <div className="alerts-empty-icon" aria-hidden>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+              </div>
+              {(() => {
+                const atRiskTotal = counts.STOCKOUT_RISK + counts.REORDER_NOW;
+                const selectedArr = ALL_STATUSES.filter(s => selected.has(s));
+                const selectedLabel = selectedArr.map(s => STATUS_LABEL[s]).join(" / ");
+                if (atRiskTotal > 0) {
+                  return (
+                    <>
+                      <p className="alerts-empty-title">No <strong>{selectedLabel}</strong> items in this forecast</p>
+                      <p className="alerts-empty-hint">
+                        There {atRiskTotal === 1 ? "is" : "are"} <strong>{atRiskTotal} at-risk item{atRiskTotal === 1 ? "" : "s"}</strong> under
+                        other statuses — {counts.STOCKOUT_RISK > 0 && <span>Stockout Risk: {counts.STOCKOUT_RISK}</span>}
+                        {counts.STOCKOUT_RISK > 0 && counts.REORDER_NOW > 0 && ", "}
+                        {counts.REORDER_NOW > 0 && <span>Reorder Now: {counts.REORDER_NOW}</span>}.
+                      </p>
+                      <button className="btn btn-primary" onClick={setDefault} type="button">
+                        View all at-risk items ({atRiskTotal})
+                      </button>
+                    </>
+                  );
+                }
+                return (
+                  <>
+                    <p className="alerts-empty-title">No <strong>{selectedLabel}</strong> items</p>
+                    <p className="alerts-empty-hint">All {allAlerts.length} SKUs are healthy or overstocked in this forecast. No action needed.</p>
+                    <button className="btn btn-ghost" onClick={setAll} type="button">View all {allAlerts.length} SKUs</button>
+                  </>
+                );
+              })()}
+            </div>
+          )}
+          {!loading && !error && filtered.length > 0 && <AlertsTable alerts={filtered} />}
         </section>
       )}
     </main>
