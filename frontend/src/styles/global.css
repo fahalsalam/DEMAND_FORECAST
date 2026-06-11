@@ -3938,23 +3938,25 @@ body {
 
 /* ── CSS Variables & Root ── */
 .lp-root {
-  --lp-bg:          #ffffff;
-  --lp-bg-2:        #f8fafc;
+  /* Micro SaaS palette — from ui-ux-pro-max skill */
+  --lp-bg:          #f5f3ff;
+  --lp-bg-2:        #ede9fe;
   --lp-bg-card:     #ffffff;
-  --lp-bg-card-2:   #f1f5f9;
-  --lp-border:      rgba(0,0,0,0.08);
-  --lp-border-2:    rgba(0,0,0,0.12);
+  --lp-bg-card-2:   #ebeff9;
+  --lp-border:      #e0e7ff;
+  --lp-border-2:    #c7d2fe;
   --lp-accent:      #6366f1;
   --lp-accent-glow: rgba(99,102,241,0.2);
   --lp-accent-dim:  rgba(99,102,241,0.08);
-  --lp-teal:        #0d9488;
-  --lp-red:         #e11d48;
-  --lp-text-1:      #0f172a;
-  --lp-text-2:      #475569;
+  --lp-teal:        #059669;
+  --lp-red:         #dc2626;
+  --lp-text-1:      #1e1b4b;
+  --lp-text-2:      #64748b;
   --lp-text-3:      #94a3b8;
+  /* Calistoga + Inter + JetBrains Mono — SaaS Mobile Boutique typography */
   --lp-mono:        'JetBrains Mono', monospace;
-  --lp-head:        'Space Grotesk', sans-serif;
-  --lp-sans:        'DM Sans', system-ui, sans-serif;
+  --lp-head:        'Calistoga', serif;
+  --lp-sans:        'Inter', system-ui, sans-serif;
 
   font-family: var(--lp-sans);
   background: var(--lp-bg);
