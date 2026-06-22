@@ -22,7 +22,7 @@ from app.api.health import router as health_router
 from app.api.metrics import router as metrics_router
 from app.api.reorder import router as reorder_router
 from app.api.seasonal import router as seasonal_router
-from app.api.supplier_auth import router as supplier_router
+from app.api.supplier_auth import router as supplier_router, seed_default_suppliers
 from app.api.templates import router as templates_router
 from app.db import SessionLocal, init_db
 from app.models import ForecastJob
@@ -61,6 +61,15 @@ async def lifespan(_app: FastAPI):
                 log.info("Seeded %d default festivals", n)
     except Exception:
         log.exception("Failed to seed default festivals on startup")
+
+    # Seed demo supplier accounts on first boot.
+    try:
+        with SessionLocal() as db:
+            n = seed_default_suppliers(db)
+            if n:
+                log.info("Seeded %d default supplier accounts", n)
+    except Exception:
+        log.exception("Failed to seed default supplier accounts on startup")
 
     yield
 

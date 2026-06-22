@@ -16,6 +16,20 @@ from app.schemas import ReorderDecisionOut
 
 router = APIRouter(prefix="/supplier", tags=["supplier"])
 
+# Default demo supplier accounts — name must match ProductMaster.supplier exactly.
+DEFAULT_SUPPLIERS: dict[str, str] = {
+    "Supplier-01":        "supplier01@supplier.local",
+    "Supplier-02":        "supplier02@supplier.local",
+    "Supplier-03":        "supplier03@supplier.local",
+    "Supplier-04":        "supplier04@supplier.local",
+    "Demo Beverages Co.": "beverages@supplier.local",
+    "Demo Frozen Foods":  "frozen@supplier.local",
+    "Demo Holiday Goods": "holiday@supplier.local",
+    "Demo Coffee Co.":    "coffee@supplier.local",
+    "Demo Festive Foods": "festive@supplier.local",
+}
+DEFAULT_PASSWORD = "supplier123"
+
 
 # ---------------------------------------------------------------------------
 # Password utilities (stdlib only — no extra deps)
@@ -151,3 +165,21 @@ def supplier_orders(
         -d.estimated_cost,
     ))
     return out
+
+
+def seed_default_suppliers(db: Session) -> int:
+    """Idempotently create demo supplier accounts on first boot."""
+    inserted = 0
+    for name, email in DEFAULT_SUPPLIERS.items():
+        existing = db.scalar(select(Supplier).where(Supplier.email == email))
+        if existing:
+            continue
+        db.add(Supplier(
+            name=name,
+            email=email,
+            password_hash=make_password_hash(DEFAULT_PASSWORD),
+        ))
+        inserted += 1
+    if inserted:
+        db.commit()
+    return inserted
