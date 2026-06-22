@@ -146,7 +146,7 @@ export function Login() {
           </button>
 
           <div className="demo-creds">
-            <div className="demo-creds-label">Demo credentials</div>
+            <div className="demo-creds-label">Admin demo</div>
             <div className="demo-creds-grid">
               <code>{demoCreds.email}</code>
               <code>{demoCreds.password}</code>
@@ -159,7 +159,25 @@ export function Login() {
                 setPassword(demoCreds.password);
               }}
             >
-              Fill demo credentials
+              Fill admin credentials
+            </button>
+          </div>
+
+          <div className="demo-creds demo-creds-supplier">
+            <div className="demo-creds-label">Supplier demo</div>
+            <div className="demo-creds-grid">
+              <code>supplier01@supplier.local</code>
+              <code>supplier123</code>
+            </div>
+            <button
+              type="button"
+              className="muted-link"
+              onClick={() => {
+                setEmail("supplier01@supplier.local");
+                setPassword("supplier123");
+              }}
+            >
+              Fill supplier credentials
             </button>
           </div>
         </form>

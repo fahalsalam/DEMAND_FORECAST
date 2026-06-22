@@ -22,6 +22,7 @@ import type {
   SeasonalOutlook,
   SkuSalesSummary,
   SkuSummary,
+  SupplierLoginResponse,
 } from "../types";
 
 const API_BASE: string =
@@ -195,6 +196,24 @@ export const api = {
         status: opts?.status === "ALL" ? ["ALL"] : opts?.status,
       })}`
     ),
+
+  // supplier
+  supplierLogin: (email: string, password: string) =>
+    request<SupplierLoginResponse>("/supplier/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    }),
+  getSupplierOrders: (token: string) => {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      "X-Supplier-Token": token,
+    };
+    return fetch(`${API_BASE}/supplier/orders`, { headers })
+      .then(async (res) => {
+        if (!res.ok) throw new ApiError(res.status, res.statusText);
+        return res.json() as Promise<ReorderDecisionOut[]>;
+      });
+  },
 
   // backtest
   getBacktest: (sku: string, opts?: { holdout_days?: number; service_level?: number }) =>

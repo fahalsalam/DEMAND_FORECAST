@@ -22,6 +22,7 @@ from app.api.health import router as health_router
 from app.api.metrics import router as metrics_router
 from app.api.reorder import router as reorder_router
 from app.api.seasonal import router as seasonal_router
+from app.api.supplier_auth import router as supplier_router
 from app.api.templates import router as templates_router
 from app.db import SessionLocal, init_db
 from app.models import ForecastJob
@@ -95,6 +96,7 @@ app.include_router(seasonal_router)
 app.include_router(reorder_router)
 app.include_router(backtest_router)
 app.include_router(metrics_router)
+app.include_router(supplier_router)
 
 
 @app.get("/", tags=["meta"])

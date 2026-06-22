@@ -3,6 +3,13 @@
  * Keep these in sync with backend/app/schemas/*.
  */
 
+// ---------- supplier auth --------------------------------------------------
+export interface SupplierLoginResponse {
+  token: string;
+  supplier_name: string;
+  email: string;
+}
+
 // ---------- health ---------------------------------------------------------
 export interface HealthResponse {
   status: "ok" | "degraded" | "down";

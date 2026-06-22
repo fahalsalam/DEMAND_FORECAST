@@ -13,6 +13,7 @@ import { Login } from "./pages/Login";
 import { Reorder } from "./pages/Reorder";
 import { Seasonal } from "./pages/Seasonal";
 import { Settings } from "./pages/Settings";
+import { SupplierPortal } from "./pages/SupplierPortal";
 
 const NAV_KEY = "df:activePage";
 // "backtest" is intentionally excluded so users who had it cached from a
@@ -48,6 +49,9 @@ export default function App() {
     if (showLogin) return <Login />;
     return <Landing onSignIn={() => setShowLogin(true)} />;
   }
+
+  // Supplier accounts get their own read-only portal, not the main app shell.
+  if (user.role === "supplier") return <SupplierPortal />;
 
   return (
     <div className="app-frame">

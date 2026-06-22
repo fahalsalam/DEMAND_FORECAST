@@ -20,8 +20,11 @@ from datetime import date, datetime, timedelta, timezone
 
 import numpy as np
 
+from sqlalchemy import select
+
+from app.api.supplier_auth import make_password_hash
 from app.db import Base, SessionLocal, engine, init_db
-from app.models import CurrentInventory, ProductMaster, SalesHistory
+from app.models import CurrentInventory, ProductMaster, SalesHistory, Supplier
 
 RNG = random.Random(42)
 NP_RNG = np.random.default_rng(42)
@@ -307,6 +310,41 @@ def _gen_inventory(products: list[dict], sales_by_sku: dict[str, list[dict]]) ->
     return inv
 
 
+SUPPLIER_DEMO_PASSWORD = "supplier123"
+
+# Maps supplier name → login email (used for demo supplier accounts)
+SUPPLIER_EMAILS: dict[str, str] = {
+    "Supplier-01": "supplier01@supplier.local",
+    "Supplier-02": "supplier02@supplier.local",
+    "Supplier-03": "supplier03@supplier.local",
+    "Supplier-04": "supplier04@supplier.local",
+    "Demo Beverages Co.": "beverages@supplier.local",
+    "Demo Frozen Foods": "frozen@supplier.local",
+    "Demo Holiday Goods": "holiday@supplier.local",
+    "Demo Coffee Co.": "coffee@supplier.local",
+    "Demo Festive Foods": "festive@supplier.local",
+}
+
+
+def _seed_suppliers(db) -> int:
+    """Create one supplier login account per unique supplier name."""
+    inserted = 0
+    for name, email in SUPPLIER_EMAILS.items():
+        existing = db.scalar(
+            select(Supplier).where(Supplier.email == email)
+        )
+        if existing:
+            continue
+        db.add(Supplier(
+            name=name,
+            email=email,
+            password_hash=make_password_hash(SUPPLIER_DEMO_PASSWORD),
+        ))
+        inserted += 1
+    db.commit()
+    return inserted
+
+
 def seed(*, fresh: bool) -> dict[str, int]:
     if fresh:
         Base.metadata.drop_all(bind=engine)
@@ -331,11 +369,15 @@ def seed(*, fresh: bool) -> dict[str, int]:
         db.bulk_insert_mappings(CurrentInventory, inventory)
         db.commit()
 
+    with SessionLocal() as db:
+        supplier_count = _seed_suppliers(db)
+
     return {
         "products": len(products),
         "sales_rows": len(sales_rows),
         "inventory_rows": len(inventory),
         "cold_start_skus": sum(1 for p in products if p["sku"].startswith("SKU-NEW")),
+        "suppliers": supplier_count,
     }
 
 

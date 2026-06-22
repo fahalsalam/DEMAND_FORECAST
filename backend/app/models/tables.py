@@ -145,6 +145,18 @@ class Festival(Base):
     notes: Mapped[str | None] = mapped_column(String, nullable=True)
 
 
+# ---------- suppliers ----------
+class Supplier(Base):
+    """A supplier account that can log in and view their pending reorder items."""
+    __tablename__ = "suppliers"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    email: Mapped[str] = mapped_column(String, nullable=False, unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String, nullable=False)
+    token: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+
+
 # ---------- reorder_decisions ----------
 class ReorderDecision(Base):
     __tablename__ = "reorder_decisions"

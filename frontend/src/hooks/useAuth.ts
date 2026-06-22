@@ -1,14 +1,8 @@
 /**
- * Demo-only auth shared across the app via React Context.
- *
- * Why the context: before this, `useAuth` was a plain hook with local state,
- * which meant Login.tsx and App.tsx each got their OWN copy of `user`.
- * Login's `signIn` updated Login's local state, App's state stayed null,
- * App kept rendering Login, click "did nothing". The provider gives every
- * consumer the same state instance.
- *
- * If/when a real auth backend lands, swap `signIn`'s body for a fetch
- * against /auth/login and store the returned token in memory + httpOnly cookie.
+ * Auth shared across the app via React Context.
+ * Supports two roles:
+ *   - "Inventory Manager" (admin demo, client-side only)
+ *   - "supplier" (real backend auth against /supplier/login)
  */
 import {
   createContext,
@@ -20,6 +14,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { api } from "../api/client";
 
 const AUTH_KEY = "df:auth";
 
@@ -27,6 +22,9 @@ export interface AuthUser {
   email: string;
   name: string;
   role: string;
+  /** Present when role === "supplier" */
+  supplierToken?: string;
+  supplierName?: string;
 }
 
 const DEMO_CREDS = { email: "admin@retail.local", password: "demo1234" };
@@ -72,14 +70,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(
     async (email: string, password: string) => {
-      // Tiny delay so the spinner reads as work, not a glitch.
       await new Promise((r) => setTimeout(r, 350));
       const e = email.trim().toLowerCase();
+
+      // Admin demo (client-side only).
       if (e === DEMO_CREDS.email && password === DEMO_CREDS.password) {
         localStorage.setItem(AUTH_KEY, JSON.stringify(DEMO_USER));
         setUser(DEMO_USER);
         return { ok: true };
       }
+
+      // Try supplier login against the backend.
+      try {
+        const data = await api.supplierLogin(e, password);
+        const supplierUser: AuthUser = {
+          email: data.email,
+          name: data.supplier_name,
+          role: "supplier",
+          supplierToken: data.token,
+          supplierName: data.supplier_name,
+        };
+        localStorage.setItem(AUTH_KEY, JSON.stringify(supplierUser));
+        setUser(supplierUser);
+        return { ok: true };
+      } catch {
+        // Backend unreachable or wrong credentials — fall through.
+      }
+
       return { ok: false, message: "Invalid email or password." };
     },
     []

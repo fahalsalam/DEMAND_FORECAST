@@ -7,6 +7,7 @@ from app.models.tables import (
     ProductMaster,
     ReorderDecision,
     SalesHistory,
+    Supplier,
 )
 
 __all__ = [
@@ -17,4 +18,5 @@ __all__ = [
     "ProductMaster",
     "ReorderDecision",
     "SalesHistory",
+    "Supplier",
 ]
